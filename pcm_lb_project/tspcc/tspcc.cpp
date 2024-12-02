@@ -46,12 +46,26 @@ static const struct {
 	.ORIGINAL = { 27, '[', '3', '9', 'm', 0 },
 };
 
+// create a mutex to print to the console
+std::mutex printMutex;
+// create a function to print to the console
+void print(const std::string& message, Path *path = nullptr)
+{
+	std::lock_guard<std::mutex> guard(printMutex);
+    if (path != nullptr)
+		std::cout << message << path << std::endl;
+	else
+		std::cout << message << std::endl;
+}
+
 static void threaded_branch_and_bound()
 {
   	while (!global.queue.empty()) {
         Path* current = global.queue.dequeue();
 		if (global.verbose & VER_ANALYSE)
 			std::cout << "analysing " << current << '\n';
+
+    	print("analysing ", current);
 
         if (current->size() >= MAX_DEPTH) {
 			if (current->leaf()) {
@@ -150,6 +164,7 @@ int main(int argc, char* argv[])
 		fname = argv[1];
         // verbose of all
 		global.verbose = (Verbosity) 0x1F;
+    	global.verbose = VER_NONE;
 	} else {
 		if (argc == 3 && argv[1][0] == '-' && argv[1][1] == 'v') {
 			global.verbose = (Verbosity) (argv[1][2] ? atoi(argv[1]+2) : 1);
