@@ -67,6 +67,7 @@ static void branch_and_bound(Path* current)
 			for (int i=1; i<current->max(); i++) {
 				if (!current->contains(i)) {
 					current->add(i);
+                    //TODO put inside the queue all the branches
 					branch_and_bound(current);
 					current->pop();
 				}
@@ -123,7 +124,7 @@ int main(int argc, char* argv[])
 	char* fname = 0;
 	if (argc == 2) {
 		fname = argv[1];
-		global.verbose = VER_NONE;
+		global.verbose = VER_BOUND;
 	} else {
 		if (argc == 3 && argv[1][0] == '-' && argv[1][1] == 'v') {
 			global.verbose = (Verbosity) (argv[1][2] ? atoi(argv[1]+2) : 1);
