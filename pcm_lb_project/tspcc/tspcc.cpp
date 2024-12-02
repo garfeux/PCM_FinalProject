@@ -62,23 +62,15 @@ static void threaded_branch_and_bound()
 {
   	while (!global.queue.empty()) {
         Path* current = global.queue.dequeue();
-		if (global.verbose & VER_ANALYSE)
-			std::cout << "analysing " << current << '\n';
 
     	print("analysing ", current);
 
-        if (current->size() >= MAX_DEPTH) {
+        //if (current->size() >= MAX_DEPTH) {
 			if (current->leaf()) {
 				// this is a leaf
 				current->add(0);
-				if (global.verbose & VER_COUNTERS)
-					global.counter.verified ++;
 				if (current->distance() < global.shortest->distance()) {
-					if (global.verbose & VER_SHORTER)
-						std::cout << "shorter: " << current << '\n';
 					global.shortest->copy(current);
-					if (global.verbose & VER_COUNTERS)
-						global.counter.found ++;
 				}
 				current->pop();
 			} else {
@@ -92,32 +84,20 @@ static void threaded_branch_and_bound()
 							current->pop();
 						}
 					}
-				} else {
-					// current already >= shortest known so far, bound
-					if (global.verbose & VER_BOUND )
-						std::cout << "bound " << current << '\n';
-					if (global.verbose & VER_COUNTERS)
-						global.counter.bound[current->size()] ++;
 				}
 			}
-        } else {
-		    // not yet at max depth
-		    if (current->distance() < global.shortest->distance()) {
-				for (int i=1; i<current->max(); i++) {
-					if (!current->contains(i)) {
-						current->add(i);
-						global.queue.enqueue(new Path(*current));
-						current->pop();
-					}
-				}
-			} else {
-				// current already >= shortest known so far, bound
-				if (global.verbose & VER_BOUND )
-					std::cout << "bound " << current << '\n';
-				if (global.verbose & VER_COUNTERS)
-					global.counter.bound[current->size()] ++;
-			}
-        }
+//        } else {
+//		    // not yet at max depth
+//		    if (current->distance() < global.shortest->distance()) {
+//				for (int i=1; i<current->max(); i++) {
+//					if (!current->contains(i)) {
+//						current->add(i);
+//						global.queue.enqueue(new Path(*current));
+//						current->pop();
+//					}
+//				}
+//			}
+//        }
     }
 }
 
