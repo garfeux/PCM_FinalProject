@@ -162,18 +162,22 @@ int main(int argc, char* argv[])
 
 	Graph* g = TSPFile::graph(fname);
 
-    Path* current = new Path(g);
-    current->add(0);
-    global.queue.enqueue(current);
+	global.shortest = new Path(g);
+	for (int i=0; i<g->size(); i++) {
+		global.shortest->add(i);
+	}
+	global.shortest->add(0);
+
+    global.queue = Queue<Path*>();
 
     for (int i=1; i<Path::MAX; i++) {
-        Path p = Path(g);
-        p.add(i);
-       	global.queue.enqueue(&p);
+        Path* p = new Path(g);
+        p->add(i);
+       	global.queue.enqueue(p);
 	}
 
     std::vector<std::thread> threads;
-    for (int i = 0; i < MAX_DEPTH; i++)
+    for (int i = 0; i < Path::MAX; i++)
 		threads.push_back(std::thread(threaded_branch_and_bound));
 
     for (auto &th : threads)
