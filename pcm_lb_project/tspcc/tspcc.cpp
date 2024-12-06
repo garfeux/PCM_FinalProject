@@ -11,8 +11,9 @@
 
 #include <thread>
 
-#define MAX_DEPTH 10
-#define MAX_THREADS 8
+#define MAX_DEPTH 5
+#define MAX_THREADS 4
+
 
 enum Verbosity {
 	VER_NONE = 0,
@@ -65,19 +66,24 @@ static void branch_and_bound(Path* current)
 	if (global.verbose & VER_ANALYSE)
 		print("analysing ", current);
 
+
 	if (current->leaf()) {
 		// this is a leaf
+        if (global.verbose & VER_ANALYSE)
+            print("pute ", current);
+
+
 		current->add(0);
-		if (global.verbose & VER_COUNTERS)
-			global.counter.verified ++;
+        if (global.verbose & VER_ANALYSE)
+            print("pute ", current);
 		if (current->distance() < global.shortest->distance()) {
-			if (global.verbose & VER_SHORTER)
-				std::cout << "shorter: " << current << '\n';
 			global.shortest->copy(current);
-			if (global.verbose & VER_COUNTERS)
-				global.counter.found ++;
 		}
+        if (global.verbose & VER_ANALYSE)
+            print("pute ", current);
 		current->pop();
+        if (global.verbose & VER_ANALYSE)
+            print("pute ", current);
 	} else {
 		// not yet a leaf
 		if (current->distance() < global.shortest->distance()) {
@@ -86,11 +92,10 @@ static void branch_and_bound(Path* current)
                 //std::cout << "checking " << i << " in " << current << '\n';
 				if (!current->contains(i)) {
 					//std::cout << "branching " << i << " to " << current << '\n';
-					current->add(i);
-	                Path* newPath = new Path(global.graph);
-	                newPath->copy(current);
-	                global.queue.enqueue(newPath);
-					current->pop();
+          			Path* newPath = new Path(global.graph);
+          			newPath->copy(current);
+          			newPath->add(i);
+	                branch_and_bound(newPath);
 				}
 			}
 		} else {
@@ -101,24 +106,44 @@ static void branch_and_bound(Path* current)
 				global.counter.bound[current->size()] ++;
 		}
 	}
-    delete current;
+}
+
+/*
+
+ */
+static void createNextPaths(Path* current){
+	if (current->size() < MAX_DEPTH){
+      for (int i=0; i<Path::MAX; i++) {
+        if (!current->contains(i)) {
+          Path* newPath = new Path(global.graph);
+          newPath->copy(current);
+          newPath->add(i);
+          if(newPath->distance() < global.shortest->distance()) {
+            global.queue.enqueue(newPath);
+          }
+        }
+      }
+    } else {
+      branch_and_bound(current);
+    }
 }
 
 static void threaded_branch_and_bound()
 {
+  std::cout<<"threaded_branch_and_bound"<<std::endl;
 	while (true) {
 		Path* current = nullptr;
 		try {
 			current = global.queue.dequeue();
-			if (current == nullptr)
-				break;
-
-			branch_and_bound(current);
+			createNextPaths(current);
 		} catch (EmptyQueueException& e) {
+            std::cout << "The Queue is empty" << std::endl;
 			break;
 		}
 	}
 }
+
+
 
 void reset_counters(int size)
 {
@@ -186,9 +211,32 @@ int main(int argc, char* argv[])
 
     global.graph = g;
 
-    Path *p = new Path(g);
-    p->add(0);
-    global.queue.enqueue(p);
+	Path *path = new Path(global.graph);
+    path->add(0);
+    //createNextPaths(path);
+    //TODO a regarder quand on aura 256 Threads
+    for(int i=1; i<g->size(); i++) {
+      //createNextPaths(path);
+      Path *path2 = new Path(global.graph);
+      path2->copy(path);
+      path2->add(i);
+      createNextPaths(path2);
+    }
+
+    /*try{
+      while(!global.queue.empty()) {
+      		Path* p = global.queue.dequeue();
+         	print("C'est top: ", p);
+      }
+    }catch (EmptyQueueException& e) {
+        std::cout << "The Queue is empty" << std::endl;
+    }*/
+
+
+
+
+	if (global.verbose & VER_ANALYSE)
+		print("la grosse daronne ", path);
 
     std::vector<std::thread> threads;
     for (int i = 0; i < MAX_THREADS; i++)

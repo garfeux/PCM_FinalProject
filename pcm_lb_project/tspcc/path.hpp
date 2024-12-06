@@ -17,7 +17,7 @@ public:
 private:
     int _size;
     int _distance;
-    int _nodes[MAX];
+    int _nodes[MAX+1];
     Graph* _graph;
     unsigned long long int _in;
 public:
@@ -34,6 +34,7 @@ public:
         _graph = graph;
         //_nodes = new int[max() + 1];
         _distance = 0;
+        _size = 0;
         clear();
     }
 
@@ -67,7 +68,6 @@ public:
                 _in &= ~(1 << node);
             }
         }
-        //_in &= ~(1 << _nodes[_size]);
     }
 
     bool contains(int node) const

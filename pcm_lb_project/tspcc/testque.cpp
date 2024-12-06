@@ -7,6 +7,7 @@
 #include <vector>
 #include "queue.hpp"
 
+
 struct Blob {
 	int n;
 	std::string s;
@@ -55,7 +56,7 @@ void test(Queue<T>* q, int max)
 	for (int i=1; i<max; i++)
 		q->enqueue(i);
 
-	T sum = sumup(q);
+	T sum = sumup(q, true);
 	q->enqueue(sum);
 }
 
