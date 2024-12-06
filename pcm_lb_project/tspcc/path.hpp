@@ -13,7 +13,7 @@
 
 class Path {
 public:
-    static const int MAX = 10;
+    static const int MAX = 8;
 private:
     int _size;
     int _distance;
@@ -91,6 +91,7 @@ public:
         _distance = o->_distance;
         for (int i=0; i<_size; i++)
             _nodes[i] = o->_nodes[i];
+        _in = o->_in;
     }
 
     void print(std::ostream& os) const

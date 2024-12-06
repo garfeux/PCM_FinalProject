@@ -12,6 +12,7 @@
 #include <thread>
 
 #define MAX_DEPTH 10
+#define MAX_THREADS 8
 
 enum Verbosity {
 	VER_NONE = 0,
@@ -26,6 +27,7 @@ static struct {
 	Path* shortest;
 	Verbosity verbose;
     Queue<Path*> queue;
+    Graph* graph;
 	struct {
 		int verified;	// # of paths checked
 		int found;	// # of times a shorter path was found
@@ -58,47 +60,64 @@ void print(const std::string& message, Path *path = nullptr)
 		std::cout << message << std::endl;
 }
 
-static void threaded_branch_and_bound()
+static void branch_and_bound(Path* current)
 {
-  	while (!global.queue.empty()) {
-        Path* current = global.queue.dequeue();
+	if (global.verbose & VER_ANALYSE)
+		print("analysing ", current);
 
-    	print("analysing ", current);
-
-        //if (current->size() >= MAX_DEPTH) {
-			if (current->leaf()) {
-				// this is a leaf
-				current->add(0);
-				if (current->distance() < global.shortest->distance()) {
-					global.shortest->copy(current);
-				}
-				current->pop();
-			} else {
-				// not yet a leaf
-				if (current->distance() < global.shortest->distance()) {
-					// continue branching
-					for (int i=1; i<current->max(); i++) {
-						if (!current->contains(i)) {
-							current->add(i);
-		                    global.queue.enqueue(new Path(*current));
-							current->pop();
-						}
-					}
+	if (current->leaf()) {
+		// this is a leaf
+		current->add(0);
+		if (global.verbose & VER_COUNTERS)
+			global.counter.verified ++;
+		if (current->distance() < global.shortest->distance()) {
+			if (global.verbose & VER_SHORTER)
+				std::cout << "shorter: " << current << '\n';
+			global.shortest->copy(current);
+			if (global.verbose & VER_COUNTERS)
+				global.counter.found ++;
+		}
+		current->pop();
+	} else {
+		// not yet a leaf
+		if (current->distance() < global.shortest->distance()) {
+			// continue branching
+			for (int i=1; i<current->max(); i++) {
+                //std::cout << "checking " << i << " in " << current << '\n';
+				if (!current->contains(i)) {
+					//std::cout << "branching " << i << " to " << current << '\n';
+					current->add(i);
+	                Path* newPath = new Path(global.graph);
+	                newPath->copy(current);
+	                global.queue.enqueue(newPath);
+					current->pop();
 				}
 			}
-//        } else {
-//		    // not yet at max depth
-//		    if (current->distance() < global.shortest->distance()) {
-//				for (int i=1; i<current->max(); i++) {
-//					if (!current->contains(i)) {
-//						current->add(i);
-//						global.queue.enqueue(new Path(*current));
-//						current->pop();
-//					}
-//				}
-//			}
-//        }
-    }
+		} else {
+			// current already >= shortest known so far, bound
+			if (global.verbose & VER_BOUND )
+				std::cout << "bound " << current << '\n';
+			if (global.verbose & VER_COUNTERS)
+				global.counter.bound[current->size()] ++;
+		}
+	}
+    delete current;
+}
+
+static void threaded_branch_and_bound()
+{
+	while (true) {
+		Path* current = nullptr;
+		try {
+			current = global.queue.dequeue();
+			if (current == nullptr)
+				break;
+
+			branch_and_bound(current);
+		} catch (EmptyQueueException& e) {
+			break;
+		}
+	}
 }
 
 void reset_counters(int size)
@@ -144,7 +163,7 @@ int main(int argc, char* argv[])
 		fname = argv[1];
         // verbose of all
 		global.verbose = (Verbosity) 0x1F;
-    	global.verbose = VER_NONE;
+    	global.verbose = VER_ANALYSE;
 	} else {
 		if (argc == 3 && argv[1][0] == '-' && argv[1][1] == 'v') {
 			global.verbose = (Verbosity) (argv[1][2] ? atoi(argv[1]+2) : 1);
@@ -165,41 +184,20 @@ int main(int argc, char* argv[])
 
     global.queue = Queue<Path*>();
 
-    for (int i=1; i<Path::MAX; i++) {
-        Path* p = new Path(g);
-        p->add(i);
-       	global.queue.enqueue(p);
-	}
+    global.graph = g;
+
+    Path *p = new Path(g);
+    p->add(0);
+    global.queue.enqueue(p);
 
     std::vector<std::thread> threads;
-    for (int i = 0; i < Path::MAX; i++)
+    for (int i = 0; i < MAX_THREADS; i++)
 		threads.push_back(std::thread(threaded_branch_and_bound));
 
     for (auto &th : threads)
       	th.join();
 
     std::cout << COLOR.RED << "shortest " << global.shortest << COLOR.ORIGINAL << '\n';
-
-//	if (global.verbose & VER_GRAPH)
-//		std::cout << COLOR.BLUE << g << COLOR.ORIGINAL;
-//
-//	if (global.verbose & VER_COUNTERS)
-//		reset_counters(g->size());
-//
-//	global.shortest = new Path(g);
-//	for (int i=0; i<g->size(); i++) {
-//		global.shortest->add(i);
-//	}
-//	global.shortest->add(0);
-//
-//	Path* current = new Path(g);
-//	current->add(0);
-//	branch_and_bound(current);
-//
-//	std::cout << COLOR.RED << "shortest " << global.shortest << COLOR.ORIGINAL << '\n';
-//
-//	if (global.verbose & VER_COUNTERS)
-//		print_counters();
 
 	return 0;
 }
