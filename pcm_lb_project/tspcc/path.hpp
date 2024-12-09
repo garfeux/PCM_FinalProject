@@ -13,7 +13,7 @@
 
 class Path {
 public:
-    static const int MAX = 8;
+    static const int MAX = 20;
 private:
     int _size;
     int _distance;
@@ -86,6 +86,8 @@ public:
         //    delete[] _nodes;
         //    _nodes = new int[o->max() + 1];
         //}
+
+
         _graph = o->_graph;
         _size = o->_size;
         _distance = o->_distance;

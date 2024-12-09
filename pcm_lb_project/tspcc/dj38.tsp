@@ -5,7 +5,7 @@ COMMENT: This file is a corrected version of dj89, where duplications
 COMMENT:  have been removed.  Thanks to Jay Muthuswamy and others for
 COMMENT:  requesting data sets without duplications.
 TYPE: TSP
-DIMENSION: 8
+DIMENSION: 12
 EDGE_WEIGHT_TYPE: EUC_2D
 NODE_COORD_SECTION
 1 9.691574 53.467487
@@ -16,3 +16,7 @@ NODE_COORD_SECTION
 6 26.253811 44.529980
 7 18.695515 45.554962
 8 16.857571 47.994888
+9 12.342523 35.233324
+10 1.234343 54.344523
+11 2.332342 43.456467
+12 20.32424 43.234525

@@ -11,8 +11,8 @@
 
 #include <thread>
 
-#define MAX_DEPTH 5
-#define MAX_THREADS 4
+#define MAX_DEPTH 6
+#define MAX_THREADS 64
 
 
 enum Verbosity {
@@ -25,6 +25,7 @@ enum Verbosity {
 };
 
 static struct {
+  	AtomicStamped<Path> shorts;
 	Path* shortest;
 	Verbosity verbose;
     Queue<Path*> queue;
@@ -49,44 +50,43 @@ static const struct {
 	.ORIGINAL = { 27, '[', '3', '9', 'm', 0 },
 };
 
-// create a mutex to print to the console
-std::mutex printMutex;
-// create a function to print to the console
-void print(const std::string& message, Path *path = nullptr)
-{
-	std::lock_guard<std::mutex> guard(printMutex);
-    if (path != nullptr)
-		std::cout << message << path << std::endl;
-	else
-		std::cout << message << std::endl;
-}
+//void setShortest(Path* path){
+//  	uint64_t shortest;
+//	while(true){
+//		if (global.shorts.cas()){
+//
+//        }
+//    }
+//}
 
 static void branch_and_bound(Path* current)
 {
+    uint64_t shortest;
+    //std::cout << "current b :" << current << std::endl;
 	if (global.verbose & VER_ANALYSE)
-		print("analysing ", current);
+        std::cout << "analysing" << current << std::endl;
 
 
 	if (current->leaf()) {
 		// this is a leaf
-        if (global.verbose & VER_ANALYSE)
-            print("pute ", current);
+
+		Path* newPath = new Path(global.graph);
+        newPath->copy(current);
+        newPath->add(0);
 
 
-		current->add(0);
-        if (global.verbose & VER_ANALYSE)
-            print("pute ", current);
-		if (current->distance() < global.shortest->distance()) {
-			global.shortest->copy(current);
-		}
-        if (global.verbose & VER_ANALYSE)
-            print("pute ", current);
-		current->pop();
-        if (global.verbose & VER_ANALYSE)
-            print("pute ", current);
+        bool setNewPath = true;
+        while(setNewPath){
+			Path* currentShortest = global.shorts.get(shortest);
+	        if (newPath->distance() < currentShortest->distance()) {
+         		setNewPath = !global.shorts.cas(currentShortest, newPath, shortest, shortest+1);
+			} else {
+                setNewPath = false;
+            }
+        }
+
 	} else {
-		// not yet a leaf
-		if (current->distance() < global.shortest->distance()) {
+		if (current->distance() < global.shorts.get(shortest)->distance()) {
 			// continue branching
 			for (int i=1; i<current->max(); i++) {
                 //std::cout << "checking " << i << " in " << current << '\n';
@@ -112,13 +112,15 @@ static void branch_and_bound(Path* current)
 
  */
 static void createNextPaths(Path* current){
+  	uint64_t shortest;
 	if (current->size() < MAX_DEPTH){
       for (int i=0; i<Path::MAX; i++) {
         if (!current->contains(i)) {
           Path* newPath = new Path(global.graph);
           newPath->copy(current);
           newPath->add(i);
-          if(newPath->distance() < global.shortest->distance()) {
+
+          if(newPath->distance() < global.shorts.get(shortest)->distance()) {
             global.queue.enqueue(newPath);
           }
         }
@@ -130,14 +132,17 @@ static void createNextPaths(Path* current){
 
 static void threaded_branch_and_bound()
 {
-  std::cout<<"threaded_branch_and_bound"<<std::endl;
 	while (true) {
 		Path* current = nullptr;
 		try {
 			current = global.queue.dequeue();
-			createNextPaths(current);
+            //std::cout << "Current 1: " << current << std::endl;
+            if(current != nullptr){
+              createNextPaths(current);
+            }
+
 		} catch (EmptyQueueException& e) {
-            std::cout << "The Queue is empty" << std::endl;
+            //std::cout << "The Queue is empty" << std::endl;
 			break;
 		}
 	}
@@ -188,7 +193,7 @@ int main(int argc, char* argv[])
 		fname = argv[1];
         // verbose of all
 		global.verbose = (Verbosity) 0x1F;
-    	global.verbose = VER_ANALYSE;
+    	global.verbose = VER_NONE;
 	} else {
 		if (argc == 3 && argv[1][0] == '-' && argv[1][1] == 'v') {
 			global.verbose = (Verbosity) (argv[1][2] ? atoi(argv[1]+2) : 1);
@@ -201,11 +206,13 @@ int main(int argc, char* argv[])
 
 	Graph* g = TSPFile::graph(fname);
 
-	global.shortest = new Path(g);
+    uint64_t shortest;
+	Path* p = new Path(g);
 	for (int i=0; i<g->size(); i++) {
-		global.shortest->add(i);
+		p->add(i);
 	}
-	global.shortest->add(0);
+	p->add(0);
+    global.shorts.set(p, 0);
 
     global.queue = Queue<Path*>();
 
@@ -223,21 +230,6 @@ int main(int argc, char* argv[])
       createNextPaths(path2);
     }
 
-    /*try{
-      while(!global.queue.empty()) {
-      		Path* p = global.queue.dequeue();
-         	print("C'est top: ", p);
-      }
-    }catch (EmptyQueueException& e) {
-        std::cout << "The Queue is empty" << std::endl;
-    }*/
-
-
-
-
-	if (global.verbose & VER_ANALYSE)
-		print("la grosse daronne ", path);
-
     std::vector<std::thread> threads;
     for (int i = 0; i < MAX_THREADS; i++)
 		threads.push_back(std::thread(threaded_branch_and_bound));
@@ -245,7 +237,7 @@ int main(int argc, char* argv[])
     for (auto &th : threads)
       	th.join();
 
-    std::cout << COLOR.RED << "shortest " << global.shortest << COLOR.ORIGINAL << '\n';
+    std::cout << COLOR.RED << "shortest " << global.shorts.get(shortest) << COLOR.ORIGINAL << '\n';
 
 	return 0;
 }

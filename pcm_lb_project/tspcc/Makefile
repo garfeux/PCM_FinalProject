@@ -1,7 +1,7 @@
 #  Copyright (c) 2012 Marcelo Pasin. All rights reserved.
 
-CFLAGS=-O3 -Wall --std=c++20
-LDFLAGS=-O3 -lm
+CFLAGS=-O3 -Wall --std=c++20 -g
+LDFLAGS=-O3 -lm -g
 
 all: tspcc
 

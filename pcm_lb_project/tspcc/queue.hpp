@@ -82,7 +82,7 @@ public:
 				} else {
 					T value = next->_value;
 					if (this->_headref.cas(head, next, headStamp, headStamp+1)) {
-						delete head;
+						//delete head;
 						return value;
 					}
 				}
