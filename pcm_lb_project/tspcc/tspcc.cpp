@@ -8,11 +8,11 @@
 #include "path.hpp"
 #include "tspfile.hpp"
 #include "queue.hpp"
-
+#include <atomic>
 #include <thread>
 
-#define MAX_DEPTH 6
 #define MAX_THREADS 64
+#define FINAL_PATH_SIZE 8
 
 
 enum Verbosity {
@@ -25,8 +25,8 @@ enum Verbosity {
 };
 
 static struct {
-  	AtomicStamped<Path> shorts;
-	Path* shortest;
+	std::atomic<uint64_t> shortestInt = 10000000;
+    uint64_t max_depth = 8;
 	Verbosity verbose;
     Queue<Path*> queue;
     Graph* graph;
@@ -59,9 +59,9 @@ static const struct {
 //    }
 //}
 
-static void branch_and_bound(Path* current)
+static void branch_and_bound(Path* current, Path* minPath)
 {
-    uint64_t shortest;
+
     //std::cout << "current b :" << current << std::endl;
 	if (global.verbose & VER_ANALYSE)
         std::cout << "analysing" << current << std::endl;
@@ -75,7 +75,30 @@ static void branch_and_bound(Path* current)
         newPath->add(0);
 
 
-        bool setNewPath = true;
+		bool setNewPath = true;
+        while(setNewPath){
+        	// use atomic compare and set to update the shortest global.sortestInt
+        	uint64_t shortest = global.shortestInt.load(std::memory_order_relaxed);
+        	uint64_t newPathDistance = newPath->distance();
+        	if(shortest > newPathDistance){
+            	setNewPath = !global.shortestInt.compare_exchange_strong(shortest, newPathDistance,
+                                             std::memory_order_acquire,
+                                             std::memory_order_relaxed);
+                //std::cout << "shortest: " << shortest << " newPathDistance: " << newPathDistance << std::endl;
+                if(setNewPath == false){
+                  //std::cout << "shortest: " << shortest << " newPathDistance: " << newPathDistance << std::endl;
+                  minPath->copy(newPath);
+                }
+        	} else {
+            	setNewPath = false;
+        	}
+        }
+
+
+
+
+
+        /*bool setNewPath = true;
         while(setNewPath){
 			Path* currentShortest = global.shorts.get(shortest);
 	        if (newPath->distance() < currentShortest->distance()) {
@@ -83,10 +106,10 @@ static void branch_and_bound(Path* current)
 			} else {
                 setNewPath = false;
             }
-        }
+        }*/
 
 	} else {
-		if (current->distance() < global.shorts.get(shortest)->distance()) {
+		if (current->distance() < global.shortestInt.load(std::memory_order_relaxed)) {
 			// continue branching
 			for (int i=1; i<current->max(); i++) {
                 //std::cout << "checking " << i << " in " << current << '\n';
@@ -95,7 +118,7 @@ static void branch_and_bound(Path* current)
           			Path* newPath = new Path(global.graph);
           			newPath->copy(current);
           			newPath->add(i);
-	                branch_and_bound(newPath);
+	                branch_and_bound(newPath, minPath);
 				}
 			}
 		} else {
@@ -111,34 +134,35 @@ static void branch_and_bound(Path* current)
 /*
 
  */
-static void createNextPaths(Path* current){
-  	uint64_t shortest;
-	if (current->size() < MAX_DEPTH){
-      for (int i=0; i<Path::MAX; i++) {
+static void createNextPaths(Path* current, Path* minPath){
+
+	if (current->size() < global.max_depth) {
+      for (int i=0; i<global.graph->size(); i++) {
         if (!current->contains(i)) {
           Path* newPath = new Path(global.graph);
           newPath->copy(current);
           newPath->add(i);
 
-          if(newPath->distance() < global.shorts.get(shortest)->distance()) {
+          if(newPath->distance() < global.shortestInt.load(std::memory_order_relaxed)) {
             global.queue.enqueue(newPath);
           }
         }
       }
     } else {
-      branch_and_bound(current);
+      branch_and_bound(current, minPath);
     }
 }
 
-static void threaded_branch_and_bound()
+static void threaded_branch_and_bound(int thread_id, Path* minPath)
 {
+  	//std::cout << "Thread " << thread_id << " started" << std::endl;
 	while (true) {
 		Path* current = nullptr;
 		try {
 			current = global.queue.dequeue();
             //std::cout << "Current 1: " << current << std::endl;
             if(current != nullptr){
-              createNextPaths(current);
+              createNextPaths(current, minPath);
             }
 
 		} catch (EmptyQueueException& e) {
@@ -194,6 +218,7 @@ int main(int argc, char* argv[])
         // verbose of all
 		global.verbose = (Verbosity) 0x1F;
     	global.verbose = VER_NONE;
+
 	} else {
 		if (argc == 3 && argv[1][0] == '-' && argv[1][1] == 'v') {
 			global.verbose = (Verbosity) (argv[1][2] ? atoi(argv[1]+2) : 1);
@@ -206,17 +231,26 @@ int main(int argc, char* argv[])
 
 	Graph* g = TSPFile::graph(fname);
 
-    uint64_t shortest;
+    std::cout << "Graph: " << g << std::endl;
+    std::cout << "Graph size: " << g->size() << std::endl;
+
+    //uint64_t shortest;
 	Path* p = new Path(g);
 	for (int i=0; i<g->size(); i++) {
 		p->add(i);
 	}
 	p->add(0);
-    global.shorts.set(p, 0);
+    //global.shorts.set(p, 0);
 
     global.queue = Queue<Path*>();
 
     global.graph = g;
+
+    if (g->size() < FINAL_PATH_SIZE) {
+      global.max_depth = FINAL_PATH_SIZE/2;
+    } else {
+      global.max_depth = g->size() - FINAL_PATH_SIZE;
+    }
 
 	Path *path = new Path(global.graph);
     path->add(0);
@@ -227,17 +261,28 @@ int main(int argc, char* argv[])
       Path *path2 = new Path(global.graph);
       path2->copy(path);
       path2->add(i);
-      createNextPaths(path2);
+      createNextPaths(path2, nullptr);
     }
 
     std::vector<std::thread> threads;
+    std::vector<Path*> paths;
     for (int i = 0; i < MAX_THREADS; i++)
-		threads.push_back(std::thread(threaded_branch_and_bound));
+      {
+      	paths.push_back(new Path(global.graph));
+		threads.push_back(std::thread(threaded_branch_and_bound, i, paths[i]));
+      }
+
 
     for (auto &th : threads)
       	th.join();
 
-    std::cout << COLOR.RED << "shortest " << global.shorts.get(shortest) << COLOR.ORIGINAL << '\n';
+    for(auto &p : paths){
+        if(p->distance() == global.shortestInt.load(std::memory_order_relaxed)){
+            std::cout << COLOR.RED << "shortest " << p << COLOR.ORIGINAL << '\n';
+        }
+    }
+
+
 
 	return 0;
 }
