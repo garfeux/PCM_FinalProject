@@ -8,7 +8,7 @@
 #include <vector> // For std::vector
 
 #define MAX_THREADS 10
-#define FINAL_PATH_SIZE 8
+#define FINAL_PATH_SIZE 12
 
 
 enum Verbosity {
@@ -65,17 +65,12 @@ static void branch_and_bound(Path* current, Path* minPath)
 
 	if (current->leaf()) {
 		// this is a leaf
-
-		Path* newPath = new Path(global.graph);
-        newPath->copy(current);
-        newPath->add(0);
-
-
+    	current->add(0);
 		bool setNewPath = true;
         while(setNewPath){
         	// use atomic compare and set to update the shortest global.sortestInt
         	uint64_t shortest = global.shortestInt.load(std::memory_order_relaxed);
-        	uint64_t newPathDistance = newPath->distance();
+        	uint64_t newPathDistance = current->distance();
         	if(shortest > newPathDistance){
             	setNewPath = !global.shortestInt.compare_exchange_strong(shortest, newPathDistance,
                                              std::memory_order_acquire,
@@ -83,12 +78,14 @@ static void branch_and_bound(Path* current, Path* minPath)
                 //std::cout << "shortest: " << shortest << " newPathDistance: " << newPathDistance << std::endl;
                 if(setNewPath == false){
                   //std::cout << "shortest: " << shortest << " newPathDistance: " << newPathDistance << std::endl;
-                  minPath->copy(newPath);
+                  minPath->copy(current);
                 }
         	} else {
             	setNewPath = false;
         	}
         }
+
+        current->pop();
 
 	} else {
 		if (current->distance() < global.shortestInt.load(std::memory_order_relaxed)) {
@@ -97,10 +94,9 @@ static void branch_and_bound(Path* current, Path* minPath)
                 //std::cout << "checking " << i << " in " << current << '\n';
 				if (!current->contains(i)) {
 					//std::cout << "branching " << i << " to " << current << '\n';
-          			Path* newPath = new Path(global.graph);
-          			newPath->copy(current);
-          			newPath->add(i);
-	                branch_and_bound(newPath, minPath);
+          			current->add(i);
+	                branch_and_bound(current, minPath);
+                    current->pop();
 				}
 			}
 		} else {
@@ -155,6 +151,7 @@ static void threaded_branch_and_bound(int thread_id, Path* minPath)
 			break;
 		}
 	}
+        std::cout << "Thread " << thread_id << " finished" << std::endl;
 }
 
 

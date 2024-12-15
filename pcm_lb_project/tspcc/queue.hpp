@@ -67,43 +67,29 @@ public:
 		}
 	}
 
-T dequeue() {
-    uint64_t tailStamp, headStamp, nextStamp, stamp;
+	T dequeue()
+	{
+		uint64_t tailStamp, headStamp, nextStamp, stamp;
 
-    while (true) {
-        Node<T>* head = this->_headref.get(headStamp);
-        Node<T>* tail = this->_tailref.get(tailStamp);
-        Node<T>* next = head->_nextref.get(nextStamp);
-
-        // Ensure head is consistent with the expected state
-        if (head == this->_headref.get(stamp) && stamp == headStamp) {
-            if (head == tail) {
-                // Queue might be empty
-                if (next == nullptr) {
-                    throw EmptyQueueException("Cannot dequeue from an empty queue.");
-                }
-
-                // Try to move the tail forward
-                this->_tailref.cas(tail, next, tailStamp, tailStamp + 1);
-            } else {
-                // Ensure `next` is valid before accessing
-                if (next == nullptr) {
-                    throw EmptyQueueException("Inconsistent state: next node is null.");
-                }
-
-                T value = next->_value; // Safe access after null check
-
-                // Try to move the head forward
-                if (this->_headref.cas(head, next, headStamp, headStamp + 1)) {
-                    // Optional: clean up the old head if dynamically allocated
-                    delete head;
-                    return value;
-                }
-            }
-        }
-    }
-}
-
+		while (true) {
+			Node<T>* head = this->_headref.get(headStamp);
+			Node<T>* tail = this->_tailref.get(tailStamp);
+			Node<T>* next = head->_nextref.get(nextStamp);
+			if (head == this->_headref.get(stamp) && stamp == headStamp) {
+				if (head == tail) {
+					if (next == nullptr)
+						throw(EmptyQueueException("Cannot dequeue from an empty queue."));
+					this->_tailref.cas(tail, next, tailStamp, tailStamp+1);
+				} else {
+					T value = next->_value;
+					if (this->_headref.cas(head, next, headStamp, headStamp+1)) {
+						//delete head;
+						return value;
+					}
+				}
+			}
+		}
+	}
 
     bool empty()
 	{
