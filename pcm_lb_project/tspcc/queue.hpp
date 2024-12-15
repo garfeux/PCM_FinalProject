@@ -9,6 +9,7 @@
 #ifndef _queue_hpp
 #define _queue_hpp
 
+#include <cstdint>
 #include "atomicstamped.hpp"
 
 class EmptyQueueException

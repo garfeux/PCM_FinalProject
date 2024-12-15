@@ -5,8 +5,9 @@
 #include <atomic>
 #include <thread>
 #include <limits>
+#include <vector> // For std::vector
 
-#define MAX_THREADS 64
+#define MAX_THREADS 10
 #define FINAL_PATH_SIZE 8
 
 

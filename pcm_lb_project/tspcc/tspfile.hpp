@@ -7,6 +7,7 @@
 #ifndef  _tspfile_hpp
 #define  _tspfile_hpp
 
+#include <cstring> // For C string functions like strchr, strlen, strncmp, strerror
 #include <math.h>
 #include <cerrno>
 

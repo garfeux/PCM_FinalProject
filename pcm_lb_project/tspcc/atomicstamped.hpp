@@ -2,7 +2,8 @@
 // g++ -o atomic atomic.cpp
 
 #include <iostream>
-
+#include <atomic>
+#include <cstdint>
 
 template <class T>
 class AtomicStamped {
