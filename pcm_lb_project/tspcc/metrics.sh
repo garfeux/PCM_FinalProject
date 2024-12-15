@@ -6,12 +6,13 @@ INPUT_FILE="dj38.tsp"
 ORIGINAL_DIMENSION=$(grep "DIMENSION" $INPUT_FILE | awk '{print $2}')
 
 # Plage de valeurs pour le nombre de villes
-MIN_CITIES=5
-MAX_CITIES=14
+MIN_CITIES=11
+MAX_CITIES=19
 
-# Nombre de threads à tester
+# Plage et palier pour le nombre de threads
 THREADS_MIN=1
-THREADS_MAX=20
+THREADS_MAX=260
+THREAD_STEP=8 # Incrément pour le nombre de threads
 
 # Nombre d'exécutions par configuration pour la moyenne
 ITERATIONS=1
@@ -30,8 +31,8 @@ do
     # Modifier le fichier pour ajuster le nombre de villes
     sed -i.bak "s/^DIMENSION: .*/DIMENSION: $cities/" $INPUT_FILE
 
-    # Boucle sur le nombre de threads
-    for threads in $(seq $THREADS_MIN $THREADS_MAX)
+    # Boucle sur le nombre de threads avec un pas défini
+    for threads in $(seq $THREADS_MIN $THREAD_STEP $THREADS_MAX)
     do
         echo "  THREADS_TO_USE=$threads..."
 
