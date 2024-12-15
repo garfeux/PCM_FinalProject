@@ -1,9 +1,3 @@
-//
-//  tspcc.cpp
-//  
-//  Copyright (c) 2022 Marcelo Pasin. All rights reserved.
-//
-
 #include "graph.hpp"
 #include "path.hpp"
 #include "tspfile.hpp"
@@ -93,20 +87,6 @@ static void branch_and_bound(Path* current, Path* minPath)
             	setNewPath = false;
         	}
         }
-
-
-
-
-
-        /*bool setNewPath = true;
-        while(setNewPath){
-			Path* currentShortest = global.shorts.get(shortest);
-	        if (newPath->distance() < currentShortest->distance()) {
-         		setNewPath = !global.shorts.cas(currentShortest, newPath, shortest, shortest+1);
-			} else {
-                setNewPath = false;
-            }
-        }*/
 
 	} else {
 		if (current->distance() < global.shortestInt.load(std::memory_order_relaxed)) {
