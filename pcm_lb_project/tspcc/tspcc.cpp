@@ -8,7 +8,7 @@
 #include <vector> // For std::vector
 
 #define MAX_THREADS 10
-#define FINAL_PATH_SIZE 10
+#define FINAL_PATH_SIZE 12
 
 
 enum Verbosity {
@@ -227,7 +227,7 @@ int main(int argc, char* argv[])
 
     global.graph = g;
 
-    if (g->size() < FINAL_PATH_SIZE) {
+    if (g->size() <= FINAL_PATH_SIZE + 2) {
       global.max_depth = FINAL_PATH_SIZE/2;
     } else {
       global.max_depth = g->size() - FINAL_PATH_SIZE;
@@ -244,6 +244,7 @@ int main(int argc, char* argv[])
       path2->add(i);
       createNextPaths(path2, nullptr);
     }
+    delete path;
 
     std::vector<std::thread> threads;
     std::vector<Path*> paths;

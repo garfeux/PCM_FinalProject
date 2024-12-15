@@ -13,7 +13,7 @@
 
 class Path {
 private:
-	const static int MAX = 32;
+	const static int MAX = 20;
 	int _size;
 	int _distance;
 	char _nodes[MAX];
