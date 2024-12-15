@@ -195,20 +195,14 @@ void print_counters()
 int main(int argc, char* argv[])
 {
 	char* fname = 0;
+	int nombreThreads = 0;
 	if (argc == 2) {
 		fname = argv[1];
-        // verbose of all
-		global.verbose = (Verbosity) 0x1F;
-    	global.verbose = VER_NONE;
-
-	} else {
-		if (argc == 3 && argv[1][0] == '-' && argv[1][1] == 'v') {
-			global.verbose = (Verbosity) (argv[1][2] ? atoi(argv[1]+2) : 1);
-			fname = argv[2];
-		} else {
-			fprintf(stderr, "usage: %s [-v#] filename\n", argv[0]);
-			exit(1);
-		}
+		global.verbose = VER_BOUND;
+	} else if (argc == 3) {
+		fname = argv[1];
+		nombreThreads = atoi(argv[2]);
+		global.verbose = VER_NONE;
 	}
 
 	Graph* g = TSPFile::graph(fname);
@@ -250,7 +244,12 @@ int main(int argc, char* argv[])
 
     std::vector<std::thread> threads;
     std::vector<Path*> paths;
-    for (int i = 0; i < MAX_THREADS; i++)
+
+    if (nombreThreads == 0) {
+	  nombreThreads = MAX_THREADS;
+	}
+
+    for (int i = 0; i < nombreThreads; i++)
       {
       	paths.push_back(new Path(global.graph));
 		threads.push_back(std::thread(threaded_branch_and_bound, i, paths[i]));
