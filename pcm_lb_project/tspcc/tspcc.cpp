@@ -127,6 +127,8 @@ static void createNextPaths(Path* current, Path* minPath){
 
           if(newPath->distance() < global.shortestInt.load(std::memory_order_relaxed)) {
             global.queue.enqueue(newPath);
+          } else {
+            delete newPath;
           }
         }
       }
@@ -145,6 +147,7 @@ static void threaded_branch_and_bound(int thread_id, Path* minPath)
             //std::cout << "Current 1: " << current << std::endl;
             if(current != nullptr){
               createNextPaths(current, minPath);
+              delete current;
             }
 
 		} catch (EmptyQueueException& e) {
@@ -198,7 +201,7 @@ int main(int argc, char* argv[])
 	int nombreThreads = 0;
 	if (argc == 2) {
 		fname = argv[1];
-		global.verbose = VER_BOUND;
+		global.verbose = VER_NONE;
 	} else if (argc == 3) {
 		fname = argv[1];
 		nombreThreads = atoi(argv[2]);
