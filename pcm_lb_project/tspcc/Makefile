@@ -1,5 +1,6 @@
 #  Copyright (c) 2012 Marcelo Pasin. All rights reserved.
 
+# TODO : Remove the -g flag from the CFLAGS and LDFLAGS variables before submitting the project.
 CFLAGS=-O3 -Wall --std=c++20 -g
 LDFLAGS=-O3 -lm -g
 

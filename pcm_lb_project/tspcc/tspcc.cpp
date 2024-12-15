@@ -4,6 +4,7 @@
 #include "queue.hpp"
 #include <atomic>
 #include <thread>
+#include <limits>
 
 #define MAX_THREADS 64
 #define FINAL_PATH_SIZE 8
@@ -19,7 +20,7 @@ enum Verbosity {
 };
 
 static struct {
-	std::atomic<uint64_t> shortestInt = 10000000;
+	std::atomic<uint64_t> shortestInt = std::numeric_limits<uint64_t>::max();
     uint64_t max_depth = 8;
 	Verbosity verbose;
     Queue<Path*> queue;
@@ -213,6 +214,8 @@ int main(int argc, char* argv[])
 
     std::cout << "Graph: " << g << std::endl;
     std::cout << "Graph size: " << g->size() << std::endl;
+
+    std::cout << "shortestInt: " << global.shortestInt << std::endl;
 
     //uint64_t shortest;
 	Path* p = new Path(g);
