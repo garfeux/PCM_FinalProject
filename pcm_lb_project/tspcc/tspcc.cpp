@@ -8,7 +8,7 @@
 #include <vector> // For std::vector
 
 #define MAX_THREADS 10
-#define FINAL_PATH_SIZE 12
+#define FINAL_PATH_SIZE 8
 
 
 enum Verbosity {
@@ -208,6 +208,9 @@ int main(int argc, char* argv[])
 		global.verbose = VER_NONE;
 	}
 
+	// Start the timer
+	auto start_time = std::chrono::high_resolution_clock::now();
+
 	Graph* g = TSPFile::graph(fname);
 
     std::cout << "Graph: " << g << std::endl;
@@ -262,6 +265,12 @@ int main(int argc, char* argv[])
 
     for (auto &th : threads)
       	th.join();
+
+	// End the timer
+	auto end_time = std::chrono::high_resolution_clock::now();
+	auto duration = std::chrono::duration_cast<std::chrono::seconds>(end_time - start_time);
+
+    std::cout << "Time: " << duration.count() << " seconds" << std::endl;
 
     for(auto &p : paths){
         if(p->distance() == global.shortestInt.load(std::memory_order_relaxed)){

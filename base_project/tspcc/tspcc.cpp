@@ -124,7 +124,7 @@ int main(int argc, char* argv[])
 	char* fname = 0;
 	if (argc == 2) {
 		fname = argv[1];
-		global.verbose = VER_BOUND;
+		global.verbose = VER_NONE;
 	} else {
 		if (argc == 3 && argv[1][0] == '-' && argv[1][1] == 'v') {
 			global.verbose = (Verbosity) (argv[1][2] ? atoi(argv[1]+2) : 1);
@@ -134,6 +134,9 @@ int main(int argc, char* argv[])
 			exit(1);
 		}
 	}
+
+	// Start the timer
+	auto start_time = std::chrono::high_resolution_clock::now();
 
 	Graph* g = TSPFile::graph(fname);
 	if (global.verbose & VER_GRAPH)
@@ -151,6 +154,12 @@ int main(int argc, char* argv[])
 	Path* current = new Path(g);
 	current->add(0);
 	branch_and_bound(current);
+
+	// End the timer
+	auto end_time = std::chrono::high_resolution_clock::now();
+	auto duration = std::chrono::duration_cast<std::chrono::seconds>(end_time - start_time);
+
+	std::cout << "Time: " << duration.count() << " seconds" << std::endl;
 
 	std::cout << COLOR.RED << "shortest " << global.shortest << COLOR.ORIGINAL << '\n';
 
