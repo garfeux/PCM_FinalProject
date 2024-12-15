@@ -8,7 +8,7 @@
 #include <vector> // For std::vector
 
 #define MAX_THREADS 10
-#define FINAL_PATH_SIZE 8
+#define FINAL_PATH_SIZE 10
 
 
 enum Verbosity {
