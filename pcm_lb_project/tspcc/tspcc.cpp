@@ -10,7 +10,7 @@
 #define MAX_THREADS 10
 #define FINAL_PATH_SIZE 12
 
-#define ADVANCE_END_CONDITION
+//#define ADVANCE_END_CONDITION
 
 
 static struct {
@@ -241,10 +241,24 @@ int main(int argc, char* argv[])
 
 
 	int i = 0;
+	int durations[32];
     for(auto &s : stats_vector){
 		std::cout << "Thread:" << i << "\t conccureny occurence:" << s->counter - s->count << "\t duration (ms):" << s->threadTime << std::endl;
+    	durations[i] = s->threadTime;
     	i++;
 	}
+		//compute std deviation of the durations
+		double sum = 0;
+		for(int i = 0; i < nombreThreads; i++){
+			sum += durations[i];
+		}
+		double mean = sum / nombreThreads;
+		double sq_sum = 0;
+		for(int i = 0; i < nombreThreads; i++){
+			sq_sum += (durations[i] - mean) * (durations[i] - mean);
+		}
+		double stdev = sqrt(sq_sum / nombreThreads);
+		std::cout << "Standard deviation: " << stdev << std::endl;
 #ifdef ADVANCE_END_CONDITION
 		std::cout << "End condition : count of the path explored" << std::endl;
 		std::cout << "total paths: " << global.total << std::endl;
