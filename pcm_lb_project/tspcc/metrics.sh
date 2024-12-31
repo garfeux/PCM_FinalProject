@@ -37,6 +37,7 @@ do
         echo "  THREADS_TO_USE=$threads..."
 
         total_time=0
+        standard_deviation=0
 
         # Effectuer plusieurs itérations
         for ((i=1; i<=ITERATIONS; i++))
@@ -46,6 +47,7 @@ do
 
             # Extraire le temps depuis la sortie de la commande
             time=$(echo "$output" | grep "Time:" | awk '{print $2}')
+            standard_deviation=$(echo "$output" | grep "Standard Deviation:" | awk '{print $3}')
 
             # Vérifier si une valeur a été extraite
             if [[ -z "$time" ]]; then
@@ -61,7 +63,7 @@ do
         average_time=$(echo "scale=4; $total_time / $ITERATIONS" | bc)
 
         # Enregistrer les résultats
-        echo "$cities,$threads,$average_time" >> $OUTPUT_FILE
+        echo "$cities,$threads,$average_time,$standard_deviation" >> $OUTPUT_FILE
         echo "CITIES=$cities, THREADS=$threads -> Average Time: $average_time seconds"
     done
 done
