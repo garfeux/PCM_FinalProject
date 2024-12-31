@@ -91,13 +91,14 @@ public:
 							return value;
 						}
                     }
-                    if ( next2 != nullptr) {
+                    /*if ( next2 != nullptr) {
                     	T value2 = next2->_value;
                     	if (this->_tailref.cas(tail, next2, tailStamp, tailStamp+1)) {
                         	//delete head;
+                    		std::cout << "I am here" << std::endl;
                         	return value2;
                     	}
-                    }
+                    }*/
                     return nullptr;
 				}
 			}

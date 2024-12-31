@@ -10,6 +10,7 @@
 #define MAX_THREADS 10
 #define FINAL_PATH_SIZE 12
 
+#define ADVANCE_END_CONDITION
 
 enum Verbosity {
 	VER_NONE = 0,
@@ -19,6 +20,7 @@ enum Verbosity {
 	VER_ANALYSE = 8,
 	VER_COUNTERS = 16,
 };
+
 
 static struct {
 	std::atomic<uint64_t> shortestInt = std::numeric_limits<uint64_t>::max();
@@ -32,9 +34,23 @@ static struct {
 		int* bound;	// # of bound operations per level
 	} counter;
 	int size;
-	int total;		// number of paths to check
+	std::atomic<uint64_t> total;		// number of paths to check
+	std::atomic<uint64_t> verified = 0;	// shortest path found so far
 	int* fact;
+	//factorial array
+	uint64_t factorial_array[20] = {1, 1, 2, 6, 24, 120, 720, 5040, 40320,
+		362880, 3628800, 39916800, 479001600, 6227020800, 87178291200,
+		1307674368000, 20922789888000, 355687428096000, 6402373705728000, 121645100408832000};
 } global;
+
+
+typedef struct {
+	int verified;
+
+	int count;
+	int counter;
+	int threadTime;
+} Stats;
 
 static const struct {
 	char RED[6];
@@ -55,7 +71,7 @@ static const struct {
 //    }
 //}
 
-static void branch_and_bound(Path* current, Path* minPath)
+static void branch_and_bound(Path* current, Path* minPath, uint64_t* elimine)
 {
 
     //std::cout << "current b :" << current << std::endl;
@@ -66,6 +82,9 @@ static void branch_and_bound(Path* current, Path* minPath)
 	if (current->leaf()) {
 		// this is a leaf
     	current->add(0);
+#ifdef ADVANCE_END_CONDITION
+		(*elimine)++;
+#endif
 		bool setNewPath = true;
         while(setNewPath){
         	// use atomic compare and set to update the shortest global.sortestInt
@@ -95,11 +114,14 @@ static void branch_and_bound(Path* current, Path* minPath)
 				if (!current->contains(i)) {
 					//std::cout << "branching " << i << " to " << current << '\n';
           			current->add(i);
-	                branch_and_bound(current, minPath);
+	                branch_and_bound(current, minPath, elimine);
                     current->pop();
 				}
 			}
 		} else {
+#ifdef ADVANCE_END_CONDITION
+				(*elimine) += global.factorial_array[global.graph->size() - current->size()];
+#endif
 			// current already >= shortest known so far, bound
 			if (global.verbose & VER_BOUND )
 				std::cout << "bound " << current << '\n';
@@ -114,6 +136,8 @@ static void branch_and_bound(Path* current, Path* minPath)
  */
 static void createNextPaths(Path* current, Path* minPath){
 
+	uint64_t nbElimine = 0;
+
 	if (current->size() < global.max_depth) {
       for (int i=0; i<global.graph->size(); i++) {
         if (!current->contains(i)) {
@@ -124,25 +148,38 @@ static void createNextPaths(Path* current, Path* minPath){
           if(newPath->distance() < global.shortestInt.load(std::memory_order_relaxed)) {
             global.queue.enqueue(newPath);
           } else {
+#ifdef ADVANCE_END_CONDITION
+          	 nbElimine += global.factorial_array[global.graph->size() - newPath->size()];
+#endif
             delete newPath;
           }
         }
       }
+
     } else {
-      branch_and_bound(current, minPath);
+      branch_and_bound(current, minPath, &nbElimine);
     }
+
+#ifdef ADVANCE_END_CONDITION
+	global.verified.fetch_add(nbElimine, std::memory_order_relaxed);
+#endif
 }
 
-static void threaded_branch_and_bound(int thread_id, Path* minPath, int* counter)
+static void threaded_branch_and_bound(int thread_id, Path* minPath, Stats* stat)
 {
-    int count = 0;
+	auto start_time = std::chrono::high_resolution_clock::now();
+
+#ifdef ADVANCE_END_CONDITION
+	while (global.verified < global.total) {
+#else
 	while (!global.queue.empty()) {
-        count++;
+#endif
 		Path* current = nullptr;
 		try {
-			current = global.queue.dequeue(counter);
+			current = global.queue.dequeue(&stat->counter);
             //std::cout << "Current 1: " << current << std::endl;
             if(current != nullptr){
+            	stat->count++;
               createNextPaths(current, minPath);
               delete current;
             }
@@ -152,9 +189,13 @@ static void threaded_branch_and_bound(int thread_id, Path* minPath, int* counter
 		}
 	}
 
-	if ( true){
-    	std::cout << "Thread " << thread_id << " count : " << count << " | counter : " << *counter << std::endl;
+	if ( true) {
+		auto end_time = std::chrono::high_resolution_clock::now();
+		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
+		stat->threadTime = duration.count();
     }
+
+
 }
 
 
@@ -195,6 +236,8 @@ void print_counters()
 	std::cout << "check: total " << (global.total==(global.counter.verified + equiv) ? "==" : "!=") << " verified + total bound equivalent\n";
 }
 
+
+
 int main(int argc, char* argv[])
 {
 	char* fname = 0;
@@ -210,6 +253,7 @@ int main(int argc, char* argv[])
 
 	// Start the timer
 	auto start_time = std::chrono::high_resolution_clock::now();
+
 
 	Graph* g = TSPFile::graph(fname);
 
@@ -236,6 +280,9 @@ int main(int argc, char* argv[])
       global.max_depth = g->size() - FINAL_PATH_SIZE;
     }
 
+	// Factoriel of the size of the graph
+	global.total = global.factorial_array[g->size()-1];
+
 	Path *path = new Path(global.graph);
     path->add(0);
     //createNextPaths(path);
@@ -251,7 +298,7 @@ int main(int argc, char* argv[])
 
     std::vector<std::thread> threads;
     std::vector<Path*> paths;
-    std::vector<int*> counters;
+    std::vector<Stats*> stats_vector;
 
     if (nombreThreads == 0) {
 	  nombreThreads = MAX_THREADS;
@@ -260,8 +307,8 @@ int main(int argc, char* argv[])
     for (int i = 0; i < nombreThreads; i++)
       {
       	paths.push_back(new Path(global.graph));
-        counters.push_back(new int(0));
-		threads.push_back(std::thread(threaded_branch_and_bound, i, paths[i], counters[i]));
+    	stats_vector.push_back(new Stats());
+		threads.push_back(std::thread(threaded_branch_and_bound, i, paths[i], stats_vector[i]));
       }
 
 
@@ -272,14 +319,25 @@ int main(int argc, char* argv[])
 	auto end_time = std::chrono::high_resolution_clock::now();
 	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
 
-    std::cout << "Time: " << duration.count() << " milliseconds" << std::endl;
+    std::cout << "Total Time: " << duration.count() << " milliseconds" << std::endl;
 
-    for(auto &p : paths){
-        if(p->distance() == global.shortestInt.load(std::memory_order_relaxed)){
-      		std::cout << COLOR.RED << "shortest " << p << COLOR.ORIGINAL << '\n';
-        }
-    }
 
+	int i = 0;
+    for(auto &s : stats_vector){
+		std::cout << "Thread:" << i << "\t conccureny occurence:" << s->counter - s->count << "\t duration (ms):" << s->threadTime << std::endl;
+    	i++;
+	}
+#ifdef ADVANCE_END_CONDITION
+		std::cout << "total paths: " << global.total << std::endl;
+		std::cout << "total exploration: " << global.verified << std::endl;
+
+#endif
+
+		for(auto &p : paths){
+			if(p->distance() == global.shortestInt.load(std::memory_order_relaxed)){
+				std::cout << COLOR.RED << "shortest " << p << COLOR.ORIGINAL << '\n';
+			}
+		}
 
 
 	return 0;
