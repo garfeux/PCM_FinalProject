@@ -10,9 +10,9 @@ MIN_CITIES=16
 MAX_CITIES=16
 
 # Plage et palier pour le nombre de threads
-THREADS_MIN=2
-THREADS_MAX=100
-THREAD_STEP=1 # Incrément pour le nombre de threads
+THREADS_MIN=32
+THREADS_MAX=256
+THREAD_STEP=32 # Incrément pour le nombre de threads
 
 # Nombre d'exécutions par configuration pour la moyenne
 ITERATIONS=10
@@ -37,6 +37,7 @@ do
         echo "  THREADS_TO_USE=$threads..."
 
         total_time=0
+        standard_deviation=0
 
         # Effectuer plusieurs itérations
         for ((i=1; i<=ITERATIONS; i++))
@@ -45,11 +46,17 @@ do
             output=$($COMMAND $INPUT_FILE $threads)
 
             # Extraire le temps depuis la sortie de la commande
-            time=$(echo "$output" | grep "Time:" | awk '{print $2}')
+            time=$(echo "$output" | grep "Time:" | awk '{print $3}')
+            standard_deviation=$(echo "$output" | grep "Standard deviation:" | awk '{print $3}')
 
             # Vérifier si une valeur a été extraite
             if [[ -z "$time" ]]; then
                 echo "Erreur : Impossible d'extraire le temps pour CITIES=$cities, THREADS=$threads à l'itération $i."
+                exit 1
+            fi
+
+            if [[ -z "$standard_deviation" ]]; then
+                echo "Erreur : Impossible d'extraire l'écart-type pour CITIES=$cities, THREADS=$threads à l'itération $i."
                 exit 1
             fi
 
@@ -61,7 +68,7 @@ do
         average_time=$(echo "scale=4; $total_time / $ITERATIONS" | bc)
 
         # Enregistrer les résultats
-        echo "$cities,$threads,$average_time" >> $OUTPUT_FILE
+        echo "$cities,$threads,$average_time,$standard_deviation" >> $OUTPUT_FILE
         echo "CITIES=$cities, THREADS=$threads -> Average Time: $average_time seconds"
     done
 done
