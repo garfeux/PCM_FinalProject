@@ -10,9 +10,9 @@ MIN_CITIES=16
 MAX_CITIES=16
 
 # Plage et palier pour le nombre de threads
-THREADS_MIN=2
-THREADS_MAX=100
-THREAD_STEP=1 # Incrément pour le nombre de threads
+THREADS_MIN=32
+THREADS_MAX=256
+THREAD_STEP=32 # Incrément pour le nombre de threads
 
 # Nombre d'exécutions par configuration pour la moyenne
 ITERATIONS=10
