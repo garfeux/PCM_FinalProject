@@ -42,26 +42,37 @@ do
         # Effectuer plusieurs itérations
         for ((i=1; i<=ITERATIONS; i++))
         do
+            echo "Iteration $i..."
             # Exécuter la commande et capturer la sortie
             output=$($COMMAND $INPUT_FILE $threads)
 
             # Extraire le temps depuis la sortie de la commande
-            time=$(echo "$output" | grep "Time:" | awk '{print $2}')
-            standard_deviation=$(echo "$output" | grep "Standard Deviation:" | awk '{print $3}')
+            time=$(echo "$output" | grep "Time:" | awk '{print $3}')
+            standard_deviation=$(echo "$output" | grep "Standard deviation:" | awk '{print $3}')
 
             # Vérifier si une valeur a été extraite
             if [[ -z "$time" ]]; then
                 echo "Erreur : Impossible d'extraire le temps pour CITIES=$cities, THREADS=$threads à l'itération $i."
                 exit 1
             fi
+            echo "2"
+
+            if [[ -z "$standard_deviation" ]]; then
+                echo "Erreur : Impossible d'extraire l'écart-type pour CITIES=$cities, THREADS=$threads à l'itération $i."
+                exit 1
+            fi
+            echo "3"
 
             # Ajouter le temps à la somme totale
+            echo "Time: $time"
+            echo "Total Time: $total_time"
             total_time=$(echo "$total_time + $time" | bc)
+            echo "4"
         done
 
         # Calculer la moyenne
         average_time=$(echo "scale=4; $total_time / $ITERATIONS" | bc)
-
+        echo "5"
         # Enregistrer les résultats
         echo "$cities,$threads,$average_time,$standard_deviation" >> $OUTPUT_FILE
         echo "CITIES=$cities, THREADS=$threads -> Average Time: $average_time seconds"
