@@ -37,7 +37,7 @@ do
         echo "  THREADS_TO_USE=$threads..."
 
         total_time=0
-        standard_deviation=0
+        total_standard_deviation=0
 
         # Effectuer plusieurs itérations
         for ((i=1; i<=ITERATIONS; i++))
@@ -62,13 +62,16 @@ do
 
             # Ajouter le temps à la somme totale
             total_time=$(echo "$total_time + $time" | bc)
+            total_standard_deviation=$(echo "$total_standard_deviation + $standard_deviation" | bc)
+
         done
 
         # Calculer la moyenne
         average_time=$(echo "scale=4; $total_time / $ITERATIONS" | bc)
+        average_standard_deviation=$(echo "scale=4; $standard_deviation / $ITERATIONS" | bc)
 
         # Enregistrer les résultats
-        echo "$cities,$threads,$average_time,$standard_deviation" >> $OUTPUT_FILE
+        echo "$cities,$threads,$average_time,$average_standard_deviation" >> $OUTPUT_FILE
         echo "CITIES=$cities, THREADS=$threads -> Average Time: $average_time seconds"
     done
 done
