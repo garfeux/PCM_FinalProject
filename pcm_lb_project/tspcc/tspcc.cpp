@@ -133,13 +133,14 @@ static void createNextPaths(Path* current, Path* minPath){
     }
 }
 
-static void threaded_branch_and_bound(int thread_id, Path* minPath)
+static void threaded_branch_and_bound(int thread_id, Path* minPath, int* counter)
 {
-  	//std::cout << "Thread " << thread_id << " started" << std::endl;
-	while (true) {
+    int count = 0;
+	while (!global.queue.empty()) {
+        count++;
 		Path* current = nullptr;
 		try {
-			current = global.queue.dequeue();
+			current = global.queue.dequeue(counter);
             //std::cout << "Current 1: " << current << std::endl;
             if(current != nullptr){
               createNextPaths(current, minPath);
@@ -147,11 +148,13 @@ static void threaded_branch_and_bound(int thread_id, Path* minPath)
             }
 
 		} catch (EmptyQueueException& e) {
-            //std::cout << "The Queue is empty" << std::endl;
-			break;
+
 		}
 	}
-        std::cout << "Thread " << thread_id << " finished" << std::endl;
+
+	if ( true){
+    	std::cout << "Thread " << thread_id << " count : " << count << " | counter : " << *counter << std::endl;
+    }
 }
 
 
@@ -248,6 +251,7 @@ int main(int argc, char* argv[])
 
     std::vector<std::thread> threads;
     std::vector<Path*> paths;
+    std::vector<int*> counters;
 
     if (nombreThreads == 0) {
 	  nombreThreads = MAX_THREADS;
@@ -256,7 +260,8 @@ int main(int argc, char* argv[])
     for (int i = 0; i < nombreThreads; i++)
       {
       	paths.push_back(new Path(global.graph));
-		threads.push_back(std::thread(threaded_branch_and_bound, i, paths[i]));
+        counters.push_back(new int(0));
+		threads.push_back(std::thread(threaded_branch_and_bound, i, paths[i], counters[i]));
       }
 
 
@@ -265,13 +270,13 @@ int main(int argc, char* argv[])
 
 	// End the timer
 	auto end_time = std::chrono::high_resolution_clock::now();
-	auto duration = std::chrono::duration_cast<std::chrono::seconds>(end_time - start_time);
+	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
 
-    std::cout << "Time: " << duration.count() << " seconds" << std::endl;
+    std::cout << "Time: " << duration.count() << " milliseconds" << std::endl;
 
     for(auto &p : paths){
         if(p->distance() == global.shortestInt.load(std::memory_order_relaxed)){
-            std::cout << COLOR.RED << "shortest " << p << COLOR.ORIGINAL << '\n';
+      		std::cout << COLOR.RED << "shortest " << p << COLOR.ORIGINAL << '\n';
         }
     }
 

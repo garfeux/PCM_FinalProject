@@ -67,25 +67,38 @@ public:
 		}
 	}
 
-	T dequeue()
+	T dequeue(int* counter)
 	{
-		uint64_t tailStamp, headStamp, nextStamp, stamp;
+		uint64_t tailStamp, headStamp, nextStamp, nextStamp2, stamp;
 
 		while (true) {
+            // count
+            (*counter)++;
 			Node<T>* head = this->_headref.get(headStamp);
 			Node<T>* tail = this->_tailref.get(tailStamp);
 			Node<T>* next = head->_nextref.get(nextStamp);
+            Node<T>* next2 = tail->_nextref.get(nextStamp2);
 			if (head == this->_headref.get(stamp) && stamp == headStamp) {
 				if (head == tail) {
-					if (next == nullptr)
+					if (next == nullptr && next2 == nullptr)
 						throw(EmptyQueueException("Cannot dequeue from an empty queue."));
 					this->_tailref.cas(tail, next, tailStamp, tailStamp+1);
 				} else {
-					T value = next->_value;
-					if (this->_headref.cas(head, next, headStamp, headStamp+1)) {
-						//delete head;
-						return value;
-					}
+                    if ( next != nullptr) {
+						T value = next->_value;
+						if (this->_headref.cas(head, next, headStamp, headStamp+1)) {
+							//delete head;
+							return value;
+						}
+                    }
+                    if ( next2 != nullptr) {
+                    	T value2 = next2->_value;
+                    	if (this->_tailref.cas(tail, next2, tailStamp, tailStamp+1)) {
+                        	//delete head;
+                        	return value2;
+                    	}
+                    }
+                    return nullptr;
 				}
 			}
 		}
