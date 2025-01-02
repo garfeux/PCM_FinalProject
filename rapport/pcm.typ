@@ -57,7 +57,7 @@ Le programme est écrit en C++ et utilise la bibliothèque atomic pour gérer le
 
 La communication des problèmes entre les threads se fait à l'aide d'une queue. Cette queue n'utilise pas de lock pour garantir l'accès exclusif aux données partagées, mais utilise des opérations atomiques pour garantir la cohérence des données. L'implémentation de cette queue se base sur celle fournie dans le cours de PCM.
 
-L'indication de la meilleure solution est faite à l'aide d'une variable partagée, cette variable est mise à jour de manière atomique pour garantir la cohérence des données.
+L'indication de la meilleure solution est faite à l'aide d'une variable partagée, cette variable est mise à jour de manière atomique pour garantir se cohérence.
 
 #pagebreak()
 == Schéma block
