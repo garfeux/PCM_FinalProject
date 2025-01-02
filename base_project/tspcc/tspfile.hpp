@@ -9,7 +9,7 @@
 
 #include <math.h>
 #include <cerrno>
-
+#include <cstring>
 #include "graph.hpp"
 
 

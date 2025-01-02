@@ -76,31 +76,47 @@ Voici les points clés du schéma :
 - Lorsqu'un thread a terminé de traiter un sous-problème, il en récupère un autre de la queue. Dans la version 1 du code, si la queue est vide, le thread s'arrête. Dans la version 2, le thread s'arrête uniquement si le nombre de sous-problèmes traités est égal au nombre total de sous-problèmes à traiter.
 
 = Analyse des résultats
+Ce chapitre présente les résultats obtenus lors de l'exécution des deux versions du programme (avec et sans condition de fin sure). Les résultats sont basés sur des tests effectués sur un serveur de calcul avec 256 threads. Les tests ont été effectués pour un nombre de villes allant de 10 à 18.
 
-
-== Avec condition de fin sure 
+== Sans condition de fin sure (version 1)
 
 === Temps d'exécution
+
+#figure(
+  image("./images/v1.png"),
+  caption: "Temps d'exécition en fonction du nombre de villes - Version 1"
+)
 
 === Speedup 
 
 === Efficacité
 
-=== Variance sur le temps d'exécution des threads
-
-== Sans condition de fin sure
+== Avec condition de fin sure (version 2)
 
 === Temps d'exécution
+
+#figure(
+  image("./images/v2.png"),
+  caption: "Temps d'exécition en fonction du nombre de villes - Version 2"
+)
 
 === Speedup 
 
 === Efficacité
 
+== Analyse des performances des deux versions
+
 === Variance sur le temps d'exécution des threads
 
-== Analyse de la concurrence sur la queue
+L'image suivant montre la variance sur le temps d'exécution des threads pour les deux versions du programme. On peut voir que la version 1 a une variance plus élevée que la version 2. Cela est dû au fait que dans la version 1, les threads s'arrêtent dès que la queue est vide, ce qui peut entraîner des différences de temps d'exécution entre les threads. Dans la version 2, les threads s'arrêtent uniquement lorsque le nombre de sous-problèmes traités est égal au nombre total de sous-problèmes à traiter, ce qui permet de réduire la variance sur le temps d'exécution des threads. Cependant, la variance reste relativement faible pour les deux versions, ce qui tend à montrer que les threads sont bien équilibrés en termes de charge de travail, même dans la version 1. Un grand pic est visible dans la version 1 aux alentours de 15 villes et qui descend pour les nombre de villes supérieurs. Ce pic est probablement du au fait que pour 15 villes le temps d'exécution total est relativement court et donc la variance est plus visible car le problème est de taille modérée. Pour les villes inférieurs, le temps d'exécution est très (trop) cours, donc la variance est donc très faible et peu visible. 
+ 
+#figure(
+  image("./images/variance2.png"),
+  caption: "Variance sur le temps d'exécution des threads"
+)
+=== Analyse de la concurrence sur la queue
 
-
+=== Analyse de l'effet de MAX_DEPTH
 
 
 = Conclusion
