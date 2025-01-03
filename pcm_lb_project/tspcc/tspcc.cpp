@@ -165,12 +165,17 @@ int main(int argc, char* argv[])
 {
 	char* fname = 0;
 	int nombreThreads = 0;
+    int max_depth = 0;
 	if (argc == 2) {
 		fname = argv[1];
 	} else if (argc == 3) {
 		fname = argv[1];
 		nombreThreads = atoi(argv[2]);
-	}
+	} else if (argc == 4) {
+        fname = argv[1];
+        nombreThreads = atoi(argv[2]);
+        max_depth = atoi(argv[3]);
+    }
 
 	// Start the timer
 	auto start_time = std::chrono::high_resolution_clock::now();
@@ -192,11 +197,15 @@ int main(int argc, char* argv[])
 
     global.graph = g;
 
-    if (g->size() <= FINAL_PATH_SIZE + 2) {
-      global.max_depth = FINAL_PATH_SIZE/2;
+    if (max_depth != 0) {
+      global.max_depth = max_depth;
     } else {
-      global.max_depth = g->size() - FINAL_PATH_SIZE;
-    }
+    	if (g->size() <= FINAL_PATH_SIZE + 2) {
+      		global.max_depth = FINAL_PATH_SIZE/2;
+    	} else {
+      		global.max_depth = g->size() - FINAL_PATH_SIZE;
+    	}
+	}
 
 	// Factoriel of the size of the graph
 	global.total = global.factorial_array[g->size()-1];
