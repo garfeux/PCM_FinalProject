@@ -6,8 +6,8 @@ INPUT_FILE="dj38.tsp"
 ORIGINAL_DIMENSION=$(grep "DIMENSION" $INPUT_FILE | awk '{print $2}')
 
 # Plage de valeurs pour le nombre de villes
-MIN_CITIES=10
-MAX_CITIES=10
+MIN_CITIES=17
+MAX_CITIES=17
 
 # Plage et palier pour le nombre de threads
 THREADS_MIN=32
@@ -15,9 +15,9 @@ THREADS_MAX=256
 THREAD_STEP=32 # Incrément pour le nombre de threads
 
 # Maximum depth qui est dans la queue
-MAX_DEPTH_MIN=3
-MAX_DEPTH_MAX=$MAX_CITIES
-MAX_DEPTH_STEP=1
+MAX_DEPTH_MIN=10
+MAX_DEPTH_MAX=14
+MAX_DEPTH_STEP=2
 
 
 # Nombre d'exécutions par configuration pour la moyenne
