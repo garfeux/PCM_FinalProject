@@ -7,7 +7,7 @@
 #include "graph.hpp"
 #include "path.hpp"
 #include "tspfile.hpp"
-
+#include <chrono>
 
 enum Verbosity {
 	VER_NONE = 0,
@@ -157,9 +157,9 @@ int main(int argc, char* argv[])
 
 	// End the timer
 	auto end_time = std::chrono::high_resolution_clock::now();
-	auto duration = std::chrono::duration_cast<std::chrono::seconds>(end_time - start_time);
+	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
 
-	std::cout << "Time: " << duration.count() << " seconds" << std::endl;
+	std::cout << "Time: " << duration.count() << " ms" << std::endl;
 
 	std::cout << COLOR.RED << "shortest " << global.shortest << COLOR.ORIGINAL << '\n';
 
