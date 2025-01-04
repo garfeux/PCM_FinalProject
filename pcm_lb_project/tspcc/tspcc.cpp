@@ -8,7 +8,7 @@
 #include <vector> // For std::vector
 
 #define MAX_THREADS 10
-#define FINAL_PATH_SIZE 10
+#define FINAL_PATH_SIZE 12
 
 //#define ADVANCE_END_CONDITION
 
