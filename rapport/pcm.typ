@@ -3,7 +3,7 @@
 
 #show: bubble.with(
   title: "PCM",
-  subtitle: "Projet Final",
+  subtitle: "Problème du voyageur de commerce",
   author: "Loïc Frossard & Baptiste Dupertuis",
   affiliation: "HES-SO Master",
   date: datetime.today().display(),
@@ -15,9 +15,11 @@
 
 #show raw.where(block: true): it => [
   #block(fill: luma(245), inset: 10pt, radius: 4pt, width: 100%)[
+    #set text(size: 6pt)
     #it
   ]
 ]
+
 
 // Edit this content to your liking
 #show figure.where(
@@ -39,7 +41,7 @@
 #let ImageSize = 70%
 
 = Introduction
-Ce rapport présente le projet final du cours de Programmation Concurrente et Multicœur (PCM). Le projet réalisé est capable de résoudre le Problème du voyageur de commerce (TSP, Traveling Salesman Problem) pour 19 villes en environ 13 minutes sur 10 threads. 
+Ce rapport présente le projet final du cours de Programmation Concurrente et Multicœur (PCM). Le projet réalisé est capable de résoudre le Problème du voyageur de commerce (TSP, Traveling Salesman Problem) pour 19 villes en environ X minutes sur X threads. 
 
 == Objectifs
 L'objectif de ce projet est de développer un programme qui profite d'une architecture multi-cœur, en utilisant les techniques définies durant le cours de PCM.
@@ -55,9 +57,9 @@ Pour ce faire, le programme utilise une approche parallèle, en divisant le prob
 
 Le programme est écrit en C++ et utilise la bibliothèque atomic pour gérer les accès concurrents aux données partagées. Il utilise également la bibliothèque thread pour créer et gérer les threads. Le programme prend en entrée un fichier contenant les coordonnées des villes à visiter et affiche en sortie le chemin optimal ainsi que la distance totale parcourue.
 
-La communication des problèmes entre les threads se fait à l'aide d'une queue. Cette queue n'utilise pas de lock pour garantir l'accès exclusif aux données partagées, mais utilise des opérations atomiques pour garantir la cohérence des données. L'implémentation de cette queue se base sur celle fournie dans le cours de PCM.
+La communication des problèmes entre les threads se fait à l'aide d'une queue. Cette queue n'utilise pas de lock pour garantir l'accès exclusif aux données partagées, mais utilise des opérations atomiques (notamment des CAS) pour garantir la cohérence des données. L'implémentation de cette queue se base sur celle fournie dans le cours de PCM.
 
-L'indication de la meilleure solution est faite à l'aide d'une variable partagée, cette variable est mise à jour de manière atomique pour garantir se cohérence.
+L'indication de la meilleure solution est faite à l'aide d'une variable partagée, cette variable est mise à jour de manière atomique pour garantir sa cohérence.
 
 #pagebreak()
 == Schéma block
@@ -76,47 +78,233 @@ Voici les points clés du schéma :
 - Lorsqu'un thread a terminé de traiter un sous-problème, il en récupère un autre de la queue. Dans la version 1 du code, si la queue est vide, le thread s'arrête. Dans la version 2, le thread s'arrête uniquement si le nombre de sous-problèmes traités est égal au nombre total de sous-problèmes à traiter.
 
 = Analyse des résultats
-Ce chapitre présente les résultats obtenus lors de l'exécution des deux versions du programme (avec et sans condition de fin sure). Les résultats sont basés sur des tests effectués sur un serveur de calcul avec 256 threads. Les tests ont été effectués pour un nombre de villes allant de 10 à 18.
+
+#box(height: 165pt)[
+  #columns(2)[
+    Ce chapitre présente les résultats obtenus lors de l'exécution des deux versions du programme (avec et sans condition de fin sure). Les résultats sont basés sur des tests effectués sur un serveur de calcul avec 256 threads. Les tests ont été effectués pour un nombre de villes allant de 10 à 18, et des threads allant de 32 à 256 par pas de 32. Les résultats sont basés sur la moyenne de 10 exécutions de chaque test. Les temps de références pour la meilleure version séquentielle sont donné dans le tableau ci-dessous. Le programme de référence est celui de monsieur M. Passin avec la dernière version de la classe Path. Ces temps sont la moyenne de 2 mesures.
+    #align(center)[
+    #table(
+      columns: (auto, auto),
+      inset: 2pt,
+      align: horizon,
+      table.header(
+        [*Nb villes*], [*Temps [ms]*],
+      ),
+      "13",
+      "3992",
+      "14",
+      "8622",
+      "15",
+      "46393",
+      "16",
+      "228210",
+      "17",
+      "1137842",
+      "18",
+      "6541798",
+    )
+    ]
+   
+    ]
+]
+
+
+
 
 == Sans condition de fin sure (version 1)
+Ce chapitre présente les résultats obtenus lors de l'exécution de la première version du programme, sans condition de fin sure. 
 
-=== Temps d'exécution
+=== Speedup et efficience
 
-#figure(
-  image("./images/v1.png"),
-  caption: "Temps d'exécition en fonction du nombre de villes - Version 1"
+#box(height: 150pt,
+ columns(2, gutter: 0pt)[
+   #set par(justify: true)
+   #figure(
+      image("./images/speedup-v1.png", width: 100%),
+      caption: "Speedup en fonction du nombre de villes - Version 1"
+    )
+
+    #figure(
+      image("./images/efficience-v1.png"),
+      caption: "Efficience en fonction du nombre de villes - Version 1"
+    )
+ ]
 )
 
-=== Speedup 
+On peut voir que le speedup augmente avec le nombre de villes, mais que l'efficience diminue. De même le speedup augmente avec le nombre de threads, jusqu'à atteindre un plateau. Cela est dû au fait que le problème devient plus complexe avec un plus grand nombre de villes, ce qui permet de mieux exploiter les ressources des threads. Cependant, l'efficience diminue car le temps de communication entre les threads devient plus important par apport au temps de calcul, ce qui limite les gains de performance.
 
-=== Efficacité
+Le speedup maximun est atteint pour 224 threads et 18 villes, avec un speedup de 87. L'efficience maximale est atteinte pour 32 threads et 18 villes, avec une efficience de 0.90.
 
 == Avec condition de fin sure (version 2)
 
+Ce chapitre présente les résultats obtenus lors de l'exécution de la deuxième version du programme, avec condition de fin sure.
+
+
+=== Speedup et efficience
+
+#box(height: 170pt,
+ columns(2, gutter: 0pt)[
+   #set par(justify: true)
+   #figure(
+      image("./images/speedup-v2.png"),
+      caption: "Speedup en fonction du nombre de villes - Version 2"
+    )
+
+    #figure(
+      image("./images/efficience-v2.png"),
+      caption: "Efficacité en fonction du nombre de villes - Version 2"
+    )
+ ]
+)
+
+Les observations sont similaire à la version 1. Cependant le speedup maximum est plus faibe (il est au maximum de 78 pour 192 threads et 18 villes). Cela est dû au fait que la condition de fin sure augmante légèrement la charge de travail des threads car ils doivent comptabiliser les sous-problèmes traités. Cela peut entraîner une légère baisse de performance, mais cela permet de garantir que tous les threads s'arrêtent uniquement lorsque tous les sous-problèmes ont été traités.
+
+Le calcul des paths traités utilise une table pré-remplie des 20 premières factorielles, ce qui permet de réduire le temps de calcul pour déterminer le nombre de problème traités lors de l'élimination d'un sous-problème.
+
+
+#pagebreak()
+== Analyse des performances des deux versions
+Ce chapirtre analyse les performaces des deucx version et aborde certains points comme la concurrence sur la queue et la taille des sous-problème finaux. 
+
 === Temps d'exécution
 
-#figure(
-  image("./images/v2.png"),
-  caption: "Temps d'exécition en fonction du nombre de villes - Version 2"
+#box(height:  180pt,
+ columns(2, gutter: 0pt)[
+   #set par(justify: true)
+   #figure(
+      image("./images/v1.png"),
+      caption: "Temps d'exécution en fonction du nombre de villes - Version 1"
+    )
+    #figure(
+      image("./images/v2.png"),
+      caption: "Temps d'exécution en fonction du nombre de villes - Version 2"
+    )
+ ]
 )
 
-=== Speedup 
+#box(height: 104pt)[
+  #columns(2)[
+    Dans les figures ci-dessus, on constate que le temps d'exécution entre les deux version est relativement semblable. Or si on compare les speedup, on remaque la version 2 est presque 10 fois plus lente dans certains cas. Cela s'explique par le travail supplémentaire qu'il faut réaliser pour déterminer la fin sure de l'algorithme. Le tableau suivant montre les temps réalisés pour 19 villes.
+    #align(center)[
+    #table(
+      columns: (auto, auto, auto),
+      inset: 2pt,
+      align: horizon,
+      table.header(
+        [*Version*], [*Nb threads*], [*Temps [ms]*],
+      ),
+      "V1",
+      "x",
+      "x",
+      "V2",
+      "x",
+      "x",
+    )
+    ]
+   
+    ]
+]
 
-=== Efficacité
+=== Écart type sur le temps d'exécution des threads
 
-== Analyse des performances des deux versions
+#box(height: 291pt,
+ columns(2, gutter: 11pt)[
+   #set par(justify: true)
 
-=== Variance sur le temps d'exécution des threads
 
-L'image suivant montre la variance sur le temps d'exécution des threads pour les deux versions du programme. On peut voir que la version 1 a une variance plus élevée que la version 2. Cela est dû au fait que dans la version 1, les threads s'arrêtent dès que la queue est vide, ce qui peut entraîner des différences de temps d'exécution entre les threads. Dans la version 2, les threads s'arrêtent uniquement lorsque le nombre de sous-problèmes traités est égal au nombre total de sous-problèmes à traiter, ce qui permet de réduire la variance sur le temps d'exécution des threads. Cependant, la variance reste relativement faible pour les deux versions, ce qui tend à montrer que les threads sont bien équilibrés en termes de charge de travail, même dans la version 1. Un grand pic est visible dans la version 1 aux alentours de 15 villes et qui descend pour les nombre de villes supérieurs. Ce pic est probablement du au fait que pour 15 villes le temps d'exécution total est relativement court et donc la variance est plus visible car le problème est de taille modérée. Pour les villes inférieurs, le temps d'exécution est très (trop) cours, donc la variance est donc très faible et peu visible. 
+L'image suivant montre l'écart type sur le temps d'exécution des threads pour les deux versions du programme. On peut voir que la version 1 a un écart type plus élevée que la version 2. Cela est dû au fait que dans la version 1, les threads s'arrêtent dès que la queue est vide, ce qui peut entraîner des différences de temps d'exécution entre les threads. Dans la version 2, les threads s'arrêtent uniquement lorsque le nombre de sous-problèmes traités est égal au nombre total de sous-problèmes à traiter, ce qui permet de réduire l'écart type sur le temps d'exécution des threads. Cependant, *l'écart type reste relativement faible* pour les deux versions, *ce qui tend à montrer que les threads sont bien équilibrés* en termes de charge de travail, même dans la version 1. Un grand pic est visible dans la version 1 aux alentours de 15 villes et qui descend pour les nombre de villes supérieurs. Ce pic est probablement du au fait que pour 15 villes le temps d'exécution total est relativement court et donc l'écart type est plus visible car le problème est de taille modérée. Pour les villes inférieurs, le temps d'exécution est très (trop) cours, donc l'écart type est donc très faible et peu visible. 
  
 #figure(
-  image("./images/variance2.png"),
-  caption: "Variance sur le temps d'exécution des threads"
+  image("./images/variance3.png"),
+  caption: "Écart type sur le temps d'exécution des threads"
 )
-=== Analyse de la concurrence sur la queue
+
+ ]
+)
+#pagebreak()
+
 
 === Analyse de l'effet de MAX_DEPTH
+L'analyse suivatne se base sur la version 1 du programme. MAX_DEPTH est déterminée par le nombre de ville et le nombre de niveaux que l'on veut laisser résoudre à un thread. Les deux graphes ci-dessus montrent l'impact de MAX_DEPTH sur le temps d'exécution et l'écart-type du temps d'exécution des threads. Lorsqu'un problème attein MAX_DEPTH, il est résolu par un thread (c'est a dire lorsqu'il reste N - MAX_DEPTH niveau à explorer, où N est le nombre de ville). 
 
+#box(height: 190pt,
+ columns(2, gutter: 0pt)[
+   #set par(justify: true)
+   
+  #figure(
+    image("./images/jobsize-temp.png"),
+    caption: "Taille des sous-problèmes finaux - temps d'exécution"
+  )
+
+  #figure(
+    image("./images/jobsize-std.png"),
+    caption: "Taille des sous-problèmes finaux - écart-type"
+  )
+ ]
+)
+
+On constate que que si le problème final est trop grand (MAX_DEPTH trop petit), le temps d'exécution augmente et l'écart-type augmante aussi considérablement. Cela est dû au fait que les threads passent plus de temps à résoudre un sous-problème, ce qui augmante la variablité du temps d'exécution des threads (si il n'y a plus de travail certains threads s'arrètent, alors que ceux qui ont encore du travail vont mettre du temps à le finir). En revanche, si le problème final est trop petit (MAX_DEPTH trop grand), le temps d'exécution augmante aussi mais l'écart-type diminue. Cela est dû au fait que les threads passent moins de temps à résoudre un sous-problème, mais plus de temps a chercher du travail dans la queue. Cela diminue la variablité du temps d'exécution des threads, car lorsqu'il n'y a plus de travail, les threads qui en ont encore le finissent rapidement. 
+
+Pour conclure le choix de la taille du travail final est important pour les performances du programme. Il est important de trouver un équilibre entre le temps de calcul et le temps de recherche de travail pour les threads. Dans les tests réalisé, une taille de 12 villes pour le travail final semble être un bon compromis.
+
+=== Analyse de la concurrence sur la queue
+#box(height: 160pt,
+ columns(2, gutter: 5pt)[
+   #set par(justify: true)
+   
+  ```
+  Graph size: 17
+  Total Time: 21249 milliseconds
+  Thread:0         concurrency:35         duration (ms):21247
+  Thread:1         concurrency:16         duration (ms):21248
+  Thread:2         concurrency:22         duration (ms):21247
+  Thread:3         concurrency:24         duration (ms):21247
+  Thread:4         concurrency:23         duration (ms):21247
+  Thread:5         concurrency:21         duration (ms):21247
+  Thread:6         concurrency:28         duration (ms):21247
+  Thread:7         concurrency:31         duration (ms):21248
+  Thread:8         concurrency:25         duration (ms):21246
+  Thread:9         concurrency:35         duration (ms):21247
+  Standard deviation : 0.538516
+  Final problem size : 12
+  End condition : empty queue
+  shortest [3249: 0, 1, 3, 2, 4, 5, 6, 7, 8, 11, 10, 16, 15, 12, 14, 13, 9, 0]
+  ```
+
+  ```
+  Graph size: 18
+  Total Time: 126947 milliseconds
+  Thread:0         concurrency:2583       duration (ms):126947
+  Thread:1         concurrency:2220       duration (ms):126947
+  Thread:2         concurrency:2210       duration (ms):126946
+  Thread:3         concurrency:2292       duration (ms):126946
+  Thread:4         concurrency:2002       duration (ms):126946
+  Thread:5         concurrency:1974       duration (ms):126946
+  Thread:6         concurrency:2314       duration (ms):126946
+  Thread:7         concurrency:2443       duration (ms):126946
+  Thread:8         concurrency:1822       duration (ms):126944
+  Thread:9         concurrency:1985       duration (ms):126943
+  Standard deviation : 1.18743
+  Final problem size : 12
+  End condition : empty queue
+  shortest [3270: 0, 1, 3, 2, 4, 5, 6, 7, 8, 11, 10, 16, 17, 15, 12, 14, 13, 9, 0]
+  ```
+
+ ]
+)
+
+Les deux extraits de logs ci-dessus montrent la concurrence sur la queue pour deux graphes de taille 17 et 18. On peut voir que la concurrence est relativement faible pour les deux graphes, avec un maximum de 35 et 2583 accès concurrents pour un thread. 
+Sachant que dans le premiers cas il y a (17-1)! problèmes et (18-1)! problèmes pour le deuxième. Cependant, il est important de noter qu'il n'est pas possible de comparer directement le nombre de problèmes avec le nombre d'accès concurrents, car pas tout les sous-problèmes ne sont mis dans la queue. 
+
+Ici un accès concurent pour un thread montre que le thread a accédé à la queue en même temps qu'un autre thread et qu'il a du recommencer son accès car la queue car le CAS a échoué. Cela montre que la queue est bien utilisée par les threads et que la concurrence est bien gérée.
+
+Il est important de noter que la valeur de MAX_DEPTH à un impact significatif sur le nombre d'accès concurent. En effet plus MAX_DEPTH est grand, plus il y a de sous-problèmes mis dans la queue et donc plus il y a d'accès fréquent à la queue. 
 
 = Conclusion
+
+Pour conclure, le programme réalisé permet de résoudre le problème du voyageur de commerce avec une méthode branch-and-bound en X minutes avec 19 villes et 256 threads. Le meilleure speedup calculé est de 87 pour 18 villes et 224 threads. L'utilisation de méthode d'accès concurent sans lock au données partagées était le points central de ce projet. Dans le travail réalisé deux éléments principaux ont utilisé ces méthodes, une queue pour communiquer entre les threads et une variable partagée pour communiquer la meilleure solution. 
+
+Deux approche sur la manière d'arrêter les threads ont été analyée. Une première non sure, qui arrête un threads lorsque le queue est vide et une deuxième sure qui arrête un threads lorsque tout le travail a été réalisé. La première solution fonctionne et d'expérience les threads ne s'arrête pas de manière prématurée, cependant il n'as pas été prouvé que c'est le cas à chque fois. L'ajout de la condition de fin sure ralenti le programme de près de 10 fois. En effet, le meilleur speedup trouvé avec cette solution est de 78 pour 192 threads et 18 villes.   
+
+Finalement, le choix de la taille des problèmes finaux caclulé par un thread a été analysé. Le choix de cette valeur à un grand impact sur le temps d'exéctuion total et sur le nombre d'accès concurrent sur la queue. La meilleure valeur semble être 12, c'est à dire qu'un thrad résout l'entièreté du sous-problème sur il ne manque que 12 villes à celui-ci. 
+
