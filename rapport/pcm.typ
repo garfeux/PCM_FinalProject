@@ -195,10 +195,10 @@ Ce chapitre analyse les performances des deux versions et aborde certains points
       ),
       "V1",
       "196",
-      "517276 (8m37s)",
+      "538785,25 (8m58s)",
       "V2",
-      "x",
-      "x",
+      "196",
+      "614018,75 (10m14s)",
     )
     ]
    
@@ -301,7 +301,7 @@ Il est important de noter que la valeur de MAX_DEPTH à un impact significatif s
  ]
 )
 = Conclusion
-Pour conclure, le programme réalisé permet de résoudre le problème du voyageur de commerce avec une méthode branch-and-bound en 8 minutes 37 secondes avec 19 villes et 196 threads. Le meilleur speedup calculé est de 87 pour 18 villes et 224 threads. L'utilisation de méthode d'accès concurrent sans lock au données partagées était le point central de ce projet. Dans le travail réalisé deux éléments principaux ont utilisé ces méthodes, une queue pour communiquer entre les threads et une variable partagée pour communiquer la meilleure solution.
+Pour conclure, le programme réalisé permet de résoudre le problème du voyageur de commerce avec une méthode branch-and-bound en 8 minutes 58 secondes avec 19 villes et 196 threads. Le meilleur speedup calculé est de 87 pour 18 villes et 224 threads. L'utilisation de méthode d'accès concurrent sans lock au données partagées était le point central de ce projet. Dans le travail réalisé deux éléments principaux ont utilisé ces méthodes, une queue pour communiquer entre les threads et une variable partagée pour communiquer la meilleure solution.
 
 Deux approches sur la manière d'arrêter les threads ont été analysées. Une première non sure, qui arrête un threads lorsque le queue est vide et une deuxième sure qui arrête un threads lorsque tout le travail a été réalisé. La première solution fonctionne et d'expérience les threads ne s'arrête pas de manière prématurée, cependant il n'as pas été prouvé que c'est le cas à chaque fois. L'ajout de la condition de fin sure ralenti le programme de près de 10 fois. En effet, le meilleur speedup trouvé avec cette solution est de 78 pour 192 threads et 18 villes.
 
