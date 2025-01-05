@@ -246,8 +246,6 @@ int main(int argc, char* argv[])
 	auto end_time = std::chrono::high_resolution_clock::now();
 	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
 
-    std::cout << "Total Time: " << duration.count() << " milliseconds" << std::endl;
-
 
 	int i = 0;
 	int durations[32];
@@ -281,6 +279,8 @@ int main(int argc, char* argv[])
 				std::cout << COLOR.RED << "shortest " << p << COLOR.ORIGINAL << '\n';
 			}
 		}
+
+    std::cout << "Total Time: " << duration.count() << " milliseconds" << std::endl;
 
 
 	return 0;
