@@ -41,7 +41,7 @@
 #let ImageSize = 70%
 
 = Introduction
-Ce rapport présente le projet final du cours de Programmation Concurrente et Multicœur (PCM). Le projet réalisé est capable de résoudre le Problème du voyageur de commerce (TSP, Traveling Salesman Problem) pour 19 villes en environ X minutes sur X threads. 
+Ce rapport présente le projet final du cours de Programmation Concurrente et Multicœur (PCM). Le projet réalisé est capable de résoudre le Problème du voyageur de commerce (TSP, Traveling Salesman Problem) pour 19 villes en environ 8 minutes 37 secondes sur 196 threads. 
 
 == Objectifs
 L'objectif de ce projet est de développer un programme qui profite d'une architecture multi-cœur, en utilisant les techniques définies durant le cours de PCM.
@@ -194,8 +194,8 @@ Ce chapitre analyse les performances des deux versions et aborde certains points
         [*Version*], [*Nb threads*], [*Temps [ms]*],
       ),
       "V1",
-      "x",
-      "x",
+      "196",
+      "517276 (8m37s)",
       "V2",
       "x",
       "x",
@@ -248,6 +248,14 @@ On constate que que si le problème final est trop grand (MAX_DEPTH trop petit),
 Pour conclure le choix de la taille du travail final est important pour les performances du programme. Il est important de trouver un équilibre entre le temps de calcul et le temps de recherche de travail pour les threads. Dans les tests réalisés, une taille de 12 villes pour le travail final semble être un bon compromis.
 
 === Analyse de la concurrence sur la queue
+
+Les deux extraits de logs ci-dessous montrent la concurrence sur la queue pour deux graphes de taille 17 et 18. On peut voir que la concurrence est relativement faible pour les deux graphes, avec un maximum de 35 et 2583 accès concurrents pour un thread. 
+Sachant que dans le premier cas il y a (17-1)! problèmes et (18-1)! problèmes pour le deuxième. Cependant, il est important de noter qu'il n'est pas possible de comparer directement le nombre de problèmes avec le nombre d'accès concurrents, car tous les sous-problèmes ne sont pas mis dans la queue.
+
+Ici un accès concurrent pour un thread montre que le thread a accédé à la queue en même temps qu'un autre thread et qu'il a du recommencer son accès car la queue, car le CAS a échoué. Cela montre que la queue est bien utilisée par les threads et que la concurrence est bien gérée.
+
+Il est important de noter que la valeur de MAX_DEPTH à un impact significatif sur le nombre d'accès concurents. En effet, plus MAX_DEPTH est grand, plus il y a de sous-problèmes mis dans la queue et donc plus il y a d'accès fréquent à celle-ci.
+
 #box(height: 160pt,
  columns(2, gutter: 5pt)[
    #set par(justify: true)
@@ -292,17 +300,8 @@ Pour conclure le choix de la taille du travail final est important pour les perf
 
  ]
 )
-
-Les deux extraits de logs ci-dessus montrent la concurrence sur la queue pour deux graphes de taille 17 et 18. On peut voir que la concurrence est relativement faible pour les deux graphes, avec un maximum de 35 et 2583 accès concurrents pour un thread. 
-Sachant que dans le premier cas il y a (17-1)! problèmes et (18-1)! problèmes pour le deuxième. Cependant, il est important de noter qu'il n'est pas possible de comparer directement le nombre de problèmes avec le nombre d'accès concurrents, car tous les sous-problèmes ne sont pas mis dans la queue.
-
-Ici un accès concurrent pour un thread montre que le thread a accédé à la queue en même temps qu'un autre thread et qu'il a du recommencer son accès car la queue, car le CAS a échoué. Cela montre que la queue est bien utilisée par les threads et que la concurrence est bien gérée.
-
-Il est important de noter que la valeur de MAX_DEPTH à un impact significatif sur le nombre d'accès concurents. En effet, plus MAX_DEPTH est grand, plus il y a de sous-problèmes mis dans la queue et donc plus il y a d'accès fréquent à la queue.
-
 = Conclusion
-
-Pour conclure, le programme réalisé permet de résoudre le problème du voyageur de commerce avec une méthode branch-and-bound en X minutes avec 19 villes et 256 threads. Le meilleur speedup calculé est de 87 pour 18 villes et 224 threads. L'utilisation de méthode d'accès concurrent sans lock au données partagées était le point central de ce projet. Dans le travail réalisé deux éléments principaux ont utilisé ces méthodes, une queue pour communiquer entre les threads et une variable partagée pour communiquer la meilleure solution.
+Pour conclure, le programme réalisé permet de résoudre le problème du voyageur de commerce avec une méthode branch-and-bound en 8 minutes 37 secondes avec 19 villes et 196 threads. Le meilleur speedup calculé est de 87 pour 18 villes et 224 threads. L'utilisation de méthode d'accès concurrent sans lock au données partagées était le point central de ce projet. Dans le travail réalisé deux éléments principaux ont utilisé ces méthodes, une queue pour communiquer entre les threads et une variable partagée pour communiquer la meilleure solution.
 
 Deux approches sur la manière d'arrêter les threads ont été analysées. Une première non sure, qui arrête un threads lorsque le queue est vide et une deuxième sure qui arrête un threads lorsque tout le travail a été réalisé. La première solution fonctionne et d'expérience les threads ne s'arrête pas de manière prématurée, cependant il n'as pas été prouvé que c'est le cas à chaque fois. L'ajout de la condition de fin sure ralenti le programme de près de 10 fois. En effet, le meilleur speedup trouvé avec cette solution est de 78 pour 192 threads et 18 villes.
 
