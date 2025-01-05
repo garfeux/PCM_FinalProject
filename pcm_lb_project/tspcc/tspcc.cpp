@@ -202,13 +202,6 @@ int main(int argc, char* argv[])
 
     std::cout << "Graph size: " << g->size() << std::endl;
 
-    //uint64_t shortest;
-	/*Path* p = new Path(g);
-	for (int i=0; i<g->size(); i++) {
-		p->add(i);
-	}
-	p->add(0);
-    //global.shorts.set(p, 0);*/
 
 	// Initialize the global variables
     global.queue = Queue<Path*>();

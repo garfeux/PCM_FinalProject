@@ -36,24 +36,30 @@
 }
  
 #outline(indent: auto)
-#pagebreak()
 
 #let ImageSize = 70%
 
 = Introduction
-Ce rapport présente le projet final du cours de Programmation Concurrente et Multicœur (PCM). Le projet réalisé est capable de résoudre le Problème du voyageur de commerce (TSP, Traveling Salesman Problem) pour 19 villes en environ 8 minutes 37 secondes sur 196 threads. 
+Ce rapport présente le projet final du cours de Programmation Concurrente et Multicœur (PCM). Le projet réalisé est capable de résoudre le Problème du voyageur de commerce (TSP, Traveling Salesman Problem) pour 19 villes en environ 8 minutes 58 secondes sur 196 threads. Le programme utilise des méthodes de programmation concurrente sans lock pour exploiter au mieux les ressources d'une architecture multi-cœur.
 
 == Objectifs
 L'objectif de ce projet est de développer un programme qui profite d'une architecture multi-cœur, en utilisant les techniques définies durant le cours de PCM.
 
 Le travail consiste à résoudre le Problème du voyageur de commerce (TSP, Traveling Salesman Problem) avec une méthode branch-and-bound. Le programme doit visiter N villes une seule fois et doit revenir à la ville de départ, en empruntant le chemin le plus court. Étant donné que le chemin est circulaire, le choix de la ville de départ n'a pas d'importance. Ceci est un problème difficile d'optimisation combinatoire, car s'il y a N villes alors, au départ d'une ville donnée, il y a (N-1)! circuits différents qui passent par les N-1 autres villes et reviennent à la ville de départ. Il est supposé qu'il existe un chemin indépendant entre toute paire de villes.
 
+== Matériel et méthodes
+- **Serveur** : Les tests ont été effectués sur un serveur de calcul Xeon Phi avec 256 threads.
+- **Ordinateur personnel** : Certains tests ont été effectués sur un ordinateur personnel avec un processeur M1 Max avec 10 cœurs.
+- **Langage de programmation** : Le programme est écrit en C++.
+
 
 = Structure du programme
 
 Le programme se base sur l'utilisation d'une méthode branch-and-bound pour résoudre le problème du voyageur de commerce. La méthode branch-and-bound est une technique de résolution de problèmes d'optimisation combinatoire. Elle consiste à diviser le problème en sous-problèmes plus petits, à évaluer ces sous-problèmes et à éliminer les branches qui ne peuvent pas contenir la solution optimale.
 
-Pour ce faire, le programme utilise une approche parallèle, en divisant le problème en plusieurs sous-problèmes qui sont résolus en parallèle. Lorsqu'un problème est résolu, le programme vérifie si la solution trouvée est meilleure que la meilleure solution actuelle. Si c'est le cas, la meilleure solution est mise à jour. Les autres sous-problèmes sont ensuite évalués en fonction de la meilleure solution actuelle, afin d'éliminer les branches qui ne peuvent pas contenir la solution optimale. Ce processus est répété jusqu'à ce que tous les sous-problèmes soient résolus.
+Pour ce faire, le programme utilise une approche parallèle, en divisant le problème en plusieurs sous-problèmes qui sont résolus en parallèle. Chaque sous-problème est un chemin qui n'est pas terminé, c'est-à-dire un chemin dans lequel une ou des villes n'ont pas encore été visitées. 
+
+Lorsqu'un problème est résolu, le programme vérifie si la solution trouvée est meilleure que la meilleure solution actuelle. Si c'est le cas, la meilleure solution est mise à jour. Les autres sous-problèmes sont ensuite évalués en fonction de la meilleure solution actuelle, afin d'éliminer les branches qui ne peuvent pas contenir la solution optimale. Ce processus est répété jusqu'à ce que tous les sous-problèmes soient résolus.
 
 Le programme est écrit en C++ et utilise la bibliothèque atomic pour gérer les accès concurrents aux données partagées. Il utilise également la bibliothèque thread pour créer et gérer les threads. Le programme prend en entrée un fichier contenant les coordonnées des villes à visiter et affiche en sortie le chemin optimal ainsi que la distance totale parcourue.
 
@@ -61,16 +67,22 @@ La communication des problèmes entre les threads se fait à l'aide d'une queue.
 
 L'indication de la meilleure solution est faite à l'aide d'une variable partagée, cette variable est mise à jour de manière atomique pour garantir sa cohérence.
 
+Dans ce rapport deux versions du programme sont analysées :  
+- La première version utilise une condition de fin non sûre, c'est-à-dire que les threads s'arrêtent dès que la queue est vide. Cette condition de fin n'est pas sûre, car il est possible que d'autres threads ajoutent des éléments à la queue après qu'un thread ait vérifié qu'elle était vide. Cela peut entraîner une situation où un thread s'arrête alors qu'il reste des éléments à traiter. Cependant, dans la pratique, cette situation ne s'est pas produite lors de nos tests. 
+- La deuxième version utilise une condition de fin sûre, c'est-à-dire que les threads s'arrêtent uniquement lorsque tous les sous-problèmes ont été traités. La variable qui comptabilise le nombre de sous-problèmes traités est mise à jour de manière atomique pour garantir sa cohérence.
+
 #pagebreak()
 == Schéma block
-Le schéma suivant illustre le fonctionnement du programme. Ici la condition de fin pour un thread est la suivante : si la queue est vide, le thread s'arrête. Cette condition de fin n'est pas sûre, car il est possible que d'autres threads ajoutent des éléments à la queue après que le thread ait vérifié qu'elle était vide. Cela peut entraîner une situation où un thread s'arrête alors qu'il reste des éléments à traiter. Cependant, dans la pratique, cette situation ne s'est pas produite lors de nos tests. Nous avons aussi analysé un programme avec une condition de fin sûre et analysé l'impact sur les performances. La condiftion de fin sure se base sur le comptage des chemins traités.
+Le schéma suivant illustre le fonctionnement du programme. Ici la condition de fin pour un thread est la suivante : si le nombre de sous-problèmes traités est égal au nombre total de sous-problèmes à traiter, le thread s'arrête. Pour la version 1, le chéma block est similaire, mais il ne fait pas les accès à la variable qui comptabilise le nombre de sous-problèmes traités.
 
 #figure(
-  image("./images/PCM-empty-queue.drawio.png"),
+  image("./images/PCM.drawio-3.png"),
   caption: "Schéma de fonctionnement du programme"
 )
+Les cases bleues représente les actions qui interagissent avec la queue, les cases vertes représentent les actions qui interagissent avec la variable de la meilleure solution en écriture. 
+#pagebreak()
 
-Les cases bleues représente les actions qui interagissent avec la queue, les cases vertes représentent les actions qui interagissent avec la variable de la meilleure solution en écriture.
+Les cases jaunes représentent les actions qui écrivent dans la variable de comptabilisation des sous-problèmes traités. Elles s'appliquent uniquement à la version 2 du programme. 
 
 Voici les points clés du schéma :
 - Le programme commence par initialiser la queue avec les deux ou trois premiers niveaux de l'arbre de recherche. Cela permet de créer assez de travail pour tous les threads et d'éviter un démarrage lent.
@@ -159,7 +171,7 @@ Ce chapitre présente les résultats obtenus lors de l'exécution de la deuxièm
 
 Les observations sont similaires à la version 1. Cependant le speedup maximum est plus faible (il est au maximum de 78 pour 192 threads et 18 villes). Cela est dû au fait que la condition de fin sûre augmente légèrement la charge de travail des threads car ils doivent comptabiliser les sous-problèmes traités. Cela peut entraîner une légère baisse de performance, mais cela permet de garantir que tous les threads s'arrêtent uniquement lorsque tous les sous-problèmes ont été traités.
 
-Le calcul des paths traités utilise une table pré-remplie des 20 premières factorielles, ce qui permet de réduire le temps de calcul pour déterminer le nombre de problèmes traités lors de l'élimination d'un sous-problème.
+Le calcul des paths traités utilise une table pré-remplie des 20 premières factorielles, ce qui permet de réduire le temps de calcul pour déterminer le nombre de problèmes traités lors de l'élimination d'un sous-problème. Cependant,  la condition de fin sûre ajoute de la concurrence supplémentaire sur la variable de comptabilisation des sous-problèmes traités, ce qui peut ralentir le programme.
 
 
 #pagebreak()
@@ -243,7 +255,7 @@ L'analyse suivante se base sur la version 1 du programme. MAX_DEPTH est détermi
  ]
 )
 
-On constate que que si le problème final est trop grand (MAX_DEPTH trop petit), le temps d'exécution augmente et l'écart-type augmente aussi considérablement. Cela est dû au fait que les threads passent plus de temps à résoudre un sous-problème, ce qui augmente la variablité du temps d'exécution des threads (si il n'y a plus de travail certains threads s'arrètent, alors que ceux qui ont encore du travail vont mettre du temps à le finir). En revanche, si le problème final est trop petit (MAX_DEPTH trop grand), le temps d'exécution augmente aussi mais l'écart-type diminue. Cela est dû au fait que les threads passent moins de temps à résoudre un sous-problème, mais plus de temps a chercher du travail dans la queue. Cela diminue la variabilité du temps d'exécution des threads, car lorsqu'il n'y a plus de travail, les threads qui en ont encore le finissent rapidement.
+On constate que que si le problème final est trop grand, ici 14 (MAX_DEPTH trop petit), le temps d'exécution augmente et l'écart-type augmente aussi considérablement. Cela est dû au fait que les threads passent plus de temps à résoudre un sous-problème, ce qui augmente la variablité du temps d'exécution des threads (si il n'y a plus de travail certains threads s'arrètent, alors que ceux qui ont encore du travail vont mettre du temps à le finir). En revanche, si le problème final est trop petit, ici 10 (MAX_DEPTH trop grand), le temps d'exécution augmente aussi mais l'écart-type diminue. Cela est dû au fait que les threads passent moins de temps à résoudre un sous-problème, mais plus de temps a chercher du travail dans la queue. Cela diminue la variabilité du temps d'exécution des threads, car lorsqu'il n'y a plus de travail, les threads qui en ont encore le finissent rapidement.
 
 Pour conclure le choix de la taille du travail final est important pour les performances du programme. Il est important de trouver un équilibre entre le temps de calcul et le temps de recherche de travail pour les threads. Dans les tests réalisés, une taille de 12 villes pour le travail final semble être un bon compromis.
 
@@ -252,7 +264,7 @@ Pour conclure le choix de la taille du travail final est important pour les perf
 Les deux extraits de logs ci-dessous montrent la concurrence sur la queue pour deux graphes de taille 17 et 18. On peut voir que la concurrence est relativement faible pour les deux graphes, avec un maximum de 35 et 2583 accès concurrents pour un thread. 
 Sachant que dans le premier cas il y a (17-1)! problèmes et (18-1)! problèmes pour le deuxième. Cependant, il est important de noter qu'il n'est pas possible de comparer directement le nombre de problèmes avec le nombre d'accès concurrents, car tous les sous-problèmes ne sont pas mis dans la queue.
 
-Ici un accès concurrent pour un thread montre que le thread a accédé à la queue en même temps qu'un autre thread et qu'il a du recommencer son accès car la queue, car le CAS a échoué. Cela montre que la queue est bien utilisée par les threads et que la concurrence est bien gérée.
+Ici un accès concurrent pour un thread montre que le thread a accédé à la queue en même temps qu'un autre thread et qu'il a dû recommencer son accès à la queue, car le CAS a échoué. Cela montre que la queue est bien utilisée par les threads et que la concurrence est bien gérée.
 
 Il est important de noter que la valeur de MAX_DEPTH à un impact significatif sur le nombre d'accès concurents. En effet, plus MAX_DEPTH est grand, plus il y a de sous-problèmes mis dans la queue et donc plus il y a d'accès fréquent à celle-ci.
 
@@ -301,11 +313,11 @@ Il est important de noter que la valeur de MAX_DEPTH à un impact significatif s
  ]
 )
 = Conclusion
-Pour conclure, le programme réalisé permet de résoudre le problème du voyageur de commerce avec une méthode branch-and-bound en 8 minutes 58 secondes avec 19 villes et 196 threads. Le meilleur speedup calculé est de 87 pour 18 villes et 224 threads. L'utilisation de méthode d'accès concurrent sans lock au données partagées était le point central de ce projet. Dans le travail réalisé deux éléments principaux ont utilisé ces méthodes, une queue pour communiquer entre les threads et une variable partagée pour communiquer la meilleure solution.
+Pour conclure, le programme réalisé permet de résoudre le problème du voyageur de commerce avec une méthode branch-and-bound en 8 minutes 58 secondes avec 19 villes et 196 threads. Le meilleur speedup calculé est de 87 pour 18 villes et 224 threads. L'utilisation de méthode d'accès concurrent sans lock au données partagées était le point central de ce projet. Dans le travail réalisé trois éléments principaux ont utilisé ces méthodes, une queue pour communiquer entre les threads, une variable partagée pour communiquer la meilleure solution et une variable partagée pour comptabiliser les sous-problèmes traités.
 
 Deux approches sur la manière d'arrêter les threads ont été analysées. Une première non sure, qui arrête un threads lorsque le queue est vide et une deuxième sure qui arrête un threads lorsque tout le travail a été réalisé. La première solution fonctionne et d'expérience les threads ne s'arrête pas de manière prématurée, cependant il n'as pas été prouvé que c'est le cas à chaque fois. L'ajout de la condition de fin sure ralenti le programme de près de 10 fois. En effet, le meilleur speedup trouvé avec cette solution est de 78 pour 192 threads et 18 villes.
 
-Finalement, le choix de la taille des problèmes finaux caclulé par un thread a été analysé. Le choix de cette valeur à un grand impact sur le temps d'exéctuion total et sur le nombre d'accès concurrent sur la queue. La meilleure valeur semble être 12, c'est à dire qu'un thrad résout l'entièreté du sous-problème sur il ne manque que 12 villes à celui-ci. 
+Finalement, le choix de la taille des problèmes finaux caclulé par un thread a été analysé. Le choix de cette valeur à un grand impact sur le temps d'exéctuion total et sur le nombre d'accès concurrent sur la queue. La meilleure valeur semble être 12, c'est à dire qu'un thrad résout l'entièreté du sous-problème si il ne manque que 12 villes à celui-ci. 
 
 == Améliorations possibles
 Une amélioration possible serait l'utilisation d'une queue de priorité. La priorité d'une sous-problème serait déterminée par la distance qu'il présente actuellement. Cela permettrait de résoudre en priorité les sous-problèmes les plus prometteurs, ce qui pourrait améliorer les performances du programme.
