@@ -307,3 +307,5 @@ Deux approches sur la manière d'arrêter les threads ont été analysées. Une 
 
 Finalement, le choix de la taille des problèmes finaux caclulé par un thread a été analysé. Le choix de cette valeur à un grand impact sur le temps d'exéctuion total et sur le nombre d'accès concurrent sur la queue. La meilleure valeur semble être 12, c'est à dire qu'un thrad résout l'entièreté du sous-problème sur il ne manque que 12 villes à celui-ci. 
 
+== Améliorations possibles
+Une amélioration possible serait l'utilisation d'une queue de priorité. La priorité d'une sous-problème serait déterminée par la distance qu'il présente actuellement. Cela permettrait de résoudre en priorité les sous-problèmes les plus prometteurs, ce qui pourrait améliorer les performances du programme.
