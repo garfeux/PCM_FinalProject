@@ -73,7 +73,7 @@ Dans ce rapport deux versions du programme sont analysées :
 
 #pagebreak()
 == Schéma block
-Le schéma suivant illustre le fonctionnement du programme. Ici la condition de fin pour un thread est la suivante : si le nombre de sous-problèmes traités est égal au nombre total de sous-problèmes à traiter, le thread s'arrête. Pour la version 1, le chéma block est similaire, mais il ne fait pas les accès à la variable qui comptabilise le nombre de sous-problèmes traités.
+Le schéma suivant illustre le fonctionnement du programme. Ici la condition de fin pour un thread est la suivante : si le nombre de sous-problèmes traités est égal au nombre total de sous-problèmes à traiter, le thread s'arrête. Pour la version 1, le schéma block est similaire, mais il ne fait pas les accès à la variable qui comptabilise le nombre de sous-problèmes traités.
 
 #figure(
   image("./images/PCM.drawio-3.png"),
@@ -171,7 +171,7 @@ Ce chapitre présente les résultats obtenus lors de l'exécution de la deuxièm
 
 Les observations sont similaires à la version 1. Cependant le speedup maximum est plus faible (il est au maximum de 78 pour 192 threads et 18 villes). Cela est dû au fait que la condition de fin sûre augmente légèrement la charge de travail des threads car ils doivent comptabiliser les sous-problèmes traités. Cela peut entraîner une légère baisse de performance, mais cela permet de garantir que tous les threads s'arrêtent uniquement lorsque tous les sous-problèmes ont été traités.
 
-Le calcul des paths traités utilise une table pré-remplie des 20 premières factorielles, ce qui permet de réduire le temps de calcul pour déterminer le nombre de problèmes traités lors de l'élimination d'un sous-problème. Cependant,  la condition de fin sûre ajoute de la concurrence supplémentaire sur la variable de comptabilisation des sous-problèmes traités, ce qui peut ralentir le programme.
+Le calcul des paths traités utilise une table pré-remplie des 20 premières factorielles, ce qui permet de réduire le temps de calcul pour déterminer le nombre de problèmes traités lors de l'élimination d'un sous-problème. Cependant, la condition de fin sûre ajoute de la concurrence supplémentaire sur la variable de comptabilisation des sous-problèmes traités, ce qui peut ralentir le programme.
 
 
 #pagebreak()
@@ -317,7 +317,8 @@ Pour conclure, le programme réalisé permet de résoudre le problème du voyage
 
 Deux approches sur la manière d'arrêter les threads ont été analysées. Une première non sure, qui arrête un threads lorsque le queue est vide et une deuxième sure qui arrête un threads lorsque tout le travail a été réalisé. La première solution fonctionne et d'expérience les threads ne s'arrête pas de manière prématurée, cependant il n'as pas été prouvé que c'est le cas à chaque fois. L'ajout de la condition de fin sure ralenti le programme de près de 10 fois. En effet, le meilleur speedup trouvé avec cette solution est de 78 pour 192 threads et 18 villes.
 
-Finalement, le choix de la taille des problèmes finaux caclulé par un thread a été analysé. Le choix de cette valeur à un grand impact sur le temps d'exéctuion total et sur le nombre d'accès concurrent sur la queue. La meilleure valeur semble être 12, c'est à dire qu'un thrad résout l'entièreté du sous-problème si il ne manque que 12 villes à celui-ci. 
+Finalement, le choix de la taille des problèmes finaux caclulé par un thread a été analysé. Le choix de cette valeur à un grand impact sur le temps d'exéctuion total et sur le nombre d'accès concurrent sur la queue. La meilleure valeur semble être 12, c'est à dire qu'un thread résout l'entièreté du sous-problème si il ne manque que 12 villes à celui-ci.
 
 == Améliorations possibles
-Une amélioration possible serait l'utilisation d'une queue de priorité. La priorité d'une sous-problème serait déterminée par la distance qu'il présente actuellement. Cela permettrait de résoudre en priorité les sous-problèmes les plus prometteurs, ce qui pourrait améliorer les performances du programme.
+
+Une amélioration possible serait l'utilisation d'une queue de priorité. La priorité d'un sous-problème serait déterminée par la distance qu'il présente actuellement. Cela permettrait de résoudre en priorité les sous-problèmes les plus prometteurs, ce qui pourrait améliorer les performances du programme.
