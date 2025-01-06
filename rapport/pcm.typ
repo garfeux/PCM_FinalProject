@@ -93,7 +93,7 @@ Voici les points clés du schéma :
 
 #box(height: 165pt)[
   #columns(2)[
-    Ce chapitre présente les résultats obtenus lors de l'exécution des deux versions du programme (avec et sans condition de fin sûre). Les résultats sont basés sur des tests effectués sur un serveur de calcul avec 256 threads. Les tests ont été effectués pour un nombre de villes allant de 10 à 18, et des threads allant de 32 à 256 par pas de 32. Les résultats sont basés sur la moyenne de 10 exécutions de chaque test. Les temps de références pour la meilleure version séquentielle sont donné dans le tableau ci-dessous. Le programme de référence est celui de monsieur M. Passin avec la dernière version de la classe Path. Ces temps sont la moyenne de 2 mesures.
+    Ce chapitre présente les résultats obtenus lors de l'exécution des deux versions du programme (avec et sans condition de fin sûre). Les résultats sont basés sur des tests effectués sur un serveur de calcul avec 256 threads. Les tests ont été effectués pour un nombre de villes allant de 10 à 18, et des threads allant de 32 à 256 par pas de 32. Les résultats sont basés sur la moyenne de 10 exécutions de chaque test. Les temps de références pour la meilleure version séquentielle sont donné dans le tableau ci-dessous. Le programme de référence est celui de monsieur M. Pasin avec la dernière version de la classe Path. Ces temps sont la moyenne de 2 mesures.
     #align(center)[
     #table(
       columns: (auto, auto),
