@@ -88,19 +88,12 @@ public:
                     if ( next != nullptr) {
 						T value = next->_value;
 						if (this->_headref.cas(head, next, headStamp, headStamp+1)) {
-							//delete head;
+							delete head;
 							return value;
 						}
                     }
-                    /*if ( next2 != nullptr) {
-                    	T value2 = next2->_value;
-                    	if (this->_tailref.cas(tail, next2, tailStamp, tailStamp+1)) {
-                        	//delete head;
-                    		std::cout << "I am here" << std::endl;
-                        	return value2;
-                    	}
-                    }*/
-                    //return nullptr;
+					// Slightly improve the perf
+					//return std::nullopt;
 				}
 			}
 		}
