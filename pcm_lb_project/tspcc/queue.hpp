@@ -1,10 +1,11 @@
 //
 //  queue.hpp
-//  
+//
 //  Copyright (c) 2023 Marcelo Pasin. All rights reserved.
 //
 
 #include <iostream>
+#include <optional>
 
 #ifndef _queue_hpp
 #define _queue_hpp
@@ -67,7 +68,7 @@ public:
 		}
 	}
 
-	T dequeue(int* counter)
+	std::optional<T> dequeue(int* counter)
 	{
 		uint64_t tailStamp, headStamp, nextStamp, nextStamp2, stamp;
 
@@ -99,7 +100,7 @@ public:
                         	return value2;
                     	}
                     }*/
-                    return nullptr;
+                    //return nullptr;
 				}
 			}
 		}

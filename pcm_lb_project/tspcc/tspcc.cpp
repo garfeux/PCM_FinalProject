@@ -152,18 +152,18 @@ static void threaded_branch_and_bound(int thread_id, Path* minPath, Stats* stat)
 	// while the queue is not empty
 	while (!global.queue.empty()) {
 #endif
-		Path* current = nullptr;
+		//Path* current = nullptr;
 		try {
 			// Get the next path to explore - counter count the number of attempts to read from the queue
-			current = global.queue.dequeue(&stat->counter);
-            if(current != nullptr){
+			auto current = global.queue.dequeue(&stat->counter);
+            if(current.has_value()){
             	 // Increment the count if the path is valid
+            	Path* path = current.value();
             	stat->count++;
             	// Create the next paths to explore or resolve the path using branch and bound
-				createNextPaths(current, minPath);
-				delete current;
-            }
-
+				createNextPaths(path, minPath);
+				delete path;
+			}
 		} catch (EmptyQueueException& e) {
 
 		}

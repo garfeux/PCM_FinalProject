@@ -27,10 +27,17 @@ T sumup(Queue<T>* q, bool print = false)
 {
 	T ret(0);
 	bool didonce = false;
+    int counter;
 
 	while (true) {
 		try {
-			T val = q->dequeue();
+			auto res = q->dequeue(&counter);
+            T val;
+            if(res.has_value())
+				val = res.value();
+			else
+				continue;
+
 			if (print)
 				std::cout << (didonce ? ", " : "") << val;
 			ret = (ret + val);
@@ -77,7 +84,7 @@ void testthread()
 
 int main()
 {
-	testthread<int>();
+    testthread<int>();
 	testthread<Blob>();
 	return 0;
 }
